@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido - Sistema de Citas</title>
+    <style>
+    body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+    .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 700px; margin: 40px auto; text-align: center; }
+    h1 { color: #0056b3; }
+    p { font-size: 1.1em; margin-bottom: 10px; /* Ajuste para mejor espaciado */ }
+    a.button, button.button-link { /* Modificado para que el botón también pueda ser un enlace estilizado */
+        display: inline-block;
+        margin-top: 10px; /* Ajustado para que no esté tan pegado */
+        margin-bottom: 10px;
+        padding: 10px 20px;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 1em;
+        cursor: pointer; /* Para el botón */
+        border: none; /* Para el botón */
+    }
+    /* Clase específica para el botón de logout */
+    .button-logout { background-color: #dc3545; }
+    .button-logout:hover { background-color: #c82333; }
+
+    /* Clase específica para el botón de cambiar contraseña */
+    .button-change-password { background-color: #ffc107; color: #212529; } /* Botón amarillo/ámbar, texto oscuro */
+    .button-change-password:hover { background-color: #e0a800; }
+
+    /* Estilo para el formulario de logout para que el botón se vea bien */
+    form.logout-form button {
+        /* Hereda estilos de .button y .button-link, solo especificamos el color si es necesario */
+        /* Ya que button.button-link ya tiene color: white, y .button-logout lo sobreescribe */
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>¡Bienvenido al Sistema de Agendamiento de Citas!</h1>
+
+        {% if user.is_authenticated %}
+            <p>Has iniciado sesión como: <strong>{{ user.username }}</strong></p>
+            {% if user.first_name %}
+                <p>Nombre: {{ user.first_name }} {{ user.last_name }}</p>
+            {% endif %}
+
+            <p><a href="{% url 'agendamiento:password_change' %}" class="button button-change-password">Cambiar Contraseña</a></p>
+            
+            <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline;">
+    {% csrf_token %}
+    <button type="submit" class="button">Cerrar Sesión</button>
+</form>
+        {% else %}
+            <p>Por favor, <a href="{% url 'agendamiento:login' %}">inicia sesión</a> para continuar.</p>
+        {% endif %}
+
+        {# Aquí podríamos añadir más contenido o enlaces a otras secciones más adelante #}
+    </div>
+</body>
+</html>
