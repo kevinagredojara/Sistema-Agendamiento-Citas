@@ -9,7 +9,7 @@
         header { background-color: #0056b3; color: white; padding: 10px 20px; text-align: right; }
         header strong { margin-right: 15px; }
         header a, header button { color: white; text-decoration: none; background-color: #007bff; padding: 5px 10px; border-radius: 4px; font-size: 0.9em; margin-left: 10px; border: none; cursor: pointer;}
-        header a:hover, header button:hover { background-color: #0056b3; } /* Un hover más oscuro para el azul principal */
+        header a:hover, header button:hover { background-color: #0056b3; }
         .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 800px; margin: 20px auto; }
         h1 { color: #0056b3; text-align: center; }
         h2 { color: #333; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;}
@@ -17,11 +17,30 @@
         ul li { margin-bottom: 10px; }
         ul li a { text-decoration: none; color: #007bff; font-size: 1.1em; }
         ul li a:hover { text-decoration: underline; }
-        /* Ajuste para los botones del header, ya estaban bien, solo unificar si es necesario */
+        .user-info { text-align: right; margin-bottom: 20px; font-size: 0.9em; }
+        /* Estilos específicos para botones del header */
         header .button-logout { background-color: #dc3545; }
         header .button-logout:hover { background-color: #c82333; }
         header .button-change-password { background-color: #ffc107; color: #212529; }
         header .button-change-password:hover { background-color: #e0a800; }
+
+        /* ESTILOS PARA LOS MENSAJES DE DJANGO (ya deberían estar si los añadiste antes) */
+        .messages { 
+            list-style-type: none; 
+            padding: 0; 
+            margin: 20px 0;
+            text-align: center;
+        }
+        .messages li {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+        }
+        .messages li.success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .messages li.error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .messages li.info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .messages li.warning { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
     </style>
 </head>
 <body>
@@ -37,18 +56,23 @@
     </header>
 
     <div class="container">
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
         <h1>Dashboard del Asesor de Servicio</h1>
         <p>Bienvenido, {{ nombre_usuario }}. Desde aquí podrás gestionar pacientes y citas.</p>
 
         <h2>Acciones Rápidas:</h2>
         <ul>
-            <li><a href="#">Registrar Nuevo Paciente</a></li>
-            <li><a href="#">Consultar Disponibilidad de Profesionales</a></li>
-            <li><a href="#">Agendar Nueva Cita</a></li>
-            <li><a href="#">Ver Citas Agendadas</a></li>
+            <li><a href="{% url 'agendamiento:registrar_paciente' %}">Registrar Nuevo Paciente</a></li>
+            <li><a href="{% url 'agendamiento:listar_pacientes' %}">Ver/Gestionar Pacientes</a></li> {# MODIFICADO ESTE ENLACE #}
+            <li><a href="#">Consultar Disponibilidad de Profesionales</a></li> {# Marcador de posición #}
+            <li><a href="#">Agendar Nueva Cita</a></li> {# Marcador de posición #}
         </ul>
-
-        {# Aquí se podrían añadir más secciones, como un resumen de citas del día, etc. #}
     </div>
 </body>
 </html>
