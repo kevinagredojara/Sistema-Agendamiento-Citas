@@ -24,7 +24,7 @@
         header .button-change-password { background-color: #ffc107; color: #212529; }
         header .button-change-password:hover { background-color: #e0a800; }
 
-        /* ESTILOS PARA LOS MENSAJES DE DJANGO (ya deberían estar si los añadiste antes) */
+        /* ESTILOS PARA LOS MENSAJES DE DJANGO */
         .messages { 
             list-style-type: none; 
             padding: 0; 
@@ -69,8 +69,8 @@
         <h2>Acciones Rápidas:</h2>
         <ul>
             <li><a href="{% url 'agendamiento:registrar_paciente' %}">Registrar Nuevo Paciente</a></li>
-            <li><a href="{% url 'agendamiento:listar_pacientes' %}">Ver/Gestionar Pacientes</a></li> {# MODIFICADO ESTE ENLACE #}
-            <li><a href="#">Consultar Disponibilidad de Profesionales</a></li> {# Marcador de posición #}
+            <li><a href="{% url 'agendamiento:listar_pacientes' %}">Ver/Gestionar Pacientes</a></li>
+            <li><a href="{% url 'agendamiento:consultar_disponibilidad' %}">Consultar Disponibilidad de Profesionales</a></li> {# MODIFICADO ESTE ENLACE #}
             <li><a href="#">Agendar Nueva Cita</a></li> {# Marcador de posición #}
         </ul>
     </div>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo_pagina|default:"Consultar Disponibilidad" }} - Sistema de Citas</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; padding: 0; background-color: #f4f4f4; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 700px; margin: 40px auto; }
+        h1 { color: #0056b3; text-align: center; margin-bottom: 20px; }
+        form p { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; }
+        select, input[type="date"] {
+            width: 100%; /* O calc(100% - 22px) si prefieres consistencia con otros inputs */
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            box-sizing: border-box;
+        }
+        button[type="submit"] { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: auto; /* Ancho automático para el botón de búsqueda */ }
+        button[type="submit"]:hover { background-color: #0056b3; }
+
+        .results-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+        .results-section h2 { text-align: left; color: #333; font-size: 1.2em; margin-bottom: 10px;}
+        .no-results { font-style: italic; color: #777; }
+        .slot-item { background-color: #e9ecef; padding: 8px; margin-bottom: 5px; border-radius: 3px; }
+
+        .messages { list-style-type: none; padding: 0; margin-bottom: 20px; }
+        .messages li.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 10px; border-radius: 4px; }
+        .messages li.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; border-radius: 4px; }
+        .messages li.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 10px; border-radius: 4px; }
+
+        .back-link-container { text-align: center; margin-top: 30px; }
+        .back-link-container a {
+            text-decoration: none;
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            border-radius: 4px;
+        }
+        .back-link-container a:hover { background-color: #5a6268; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ titulo_pagina|default:"Consultar Disponibilidad" }}</h1>
+
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {# Usaremos el método GET para este formulario de consulta, para que los criterios se vean en la URL #}
+        <form method="get" action=""> 
+            {# No necesitamos csrf_token para formularios GET #}
+
+            {{ form.as_p }} {# Renderiza los campos del ConsultaDisponibilidadForm: profesional y fecha #}
+
+            <p><button type="submit">Consultar Disponibilidad</button></p>
+        </form>
+
+        {% if profesional_seleccionado and fecha_seleccionada %}
+            <div class="results-section">
+                <h2>Disponibilidad para {{ profesional_seleccionado }} el {{ fecha_seleccionada|date:"d/m/Y" }}</h2>
+
+                {% if slots_disponibles %}
+                    <p>Horarios disponibles:</p>
+                    <ul>
+                        {% for slot_inicio, slot_fin in slots_disponibles %} {# Asumiendo que slots_disponibles es una lista de tuplas (hora_inicio, hora_fin) #}
+                            <li class="slot-item">
+                                {{ slot_inicio|time:"H:i" }} - {{ slot_fin|time:"H:i" }}
+                                {# Más adelante, aquí podría ir un botón/enlace para agendar este slot #}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    {# Este mensaje se mostrará si la búsqueda se hizo pero no hay slots, o si la lógica de búsqueda aún no está implementada #}
+                    <p class="no-results">No hay horarios disponibles para los criterios seleccionados o la búsqueda aún no está implementada.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div class="back-link-container">
+            <a href="{% url 'agendamiento:dashboard_asesor' %}">Volver al Dashboard del Asesor</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -30,6 +30,8 @@ urlpatterns = [
     # URLS GESTIÓN DE PACIENTES (POR ASESOR)
     path('paciente/registrar/', views.registrar_paciente, name='registrar_paciente'),
     path('pacientes/', views.listar_pacientes, name='listar_pacientes'),
-    # NUEVA URL PARA ACTUALIZAR PACIENTE ESPECÍFICO
     path('paciente/<int:paciente_id>/actualizar/', views.actualizar_paciente, name='actualizar_paciente'),
+
+    # NUEVA URL PARA CONSULTAR DISPONIBILIDAD
+    path('consultar-disponibilidad/', views.consultar_disponibilidad, name='consultar_disponibilidad'),
 ]
