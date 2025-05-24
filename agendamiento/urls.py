@@ -1,6 +1,7 @@
 # agendamiento/urls.py
-from django.urls import path, reverse_lazy 
+from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
+from . import views # Ya deberías tener esta importación
 
 app_name = 'agendamiento'
 
@@ -12,13 +13,21 @@ urlpatterns = [
     path('password_change/',
          auth_views.PasswordChangeView.as_view(
              template_name='agendamiento/password_change_form.html',
-             success_url=reverse_lazy('agendamiento:password_change_done') # <--- CORRECCIÓN AQUÍ
+             success_url=reverse_lazy('agendamiento:password_change_done')
          ),
          name='password_change'),
-
     path('password_change/done/',
          auth_views.PasswordChangeDoneView.as_view(
              template_name='agendamiento/password_change_done.html'
          ),
          name='password_change_done'),
+
+    # URL PARA EL DASHBOARD DEL ASESOR (Ya estaba)
+    path('dashboard/asesor/', views.dashboard_asesor, name='dashboard_asesor'),
+
+    # URL PARA EL DASHBOARD DEL PROFESIONAL (Ya estaba)
+    path('dashboard/profesional/', views.dashboard_profesional, name='dashboard_profesional'),
+
+    # NUEVA URL PARA EL DASHBOARD DEL PACIENTE
+    path('dashboard/paciente/', views.dashboard_paciente, name='dashboard_paciente'),
 ]
