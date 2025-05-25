@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo_pagina|default:"Agendar Cita" }} - Sistema de Citas</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; padding: 0; background-color: #f4f4f4; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 700px; margin: 40px auto; }
+        h1 { color: #0056b3; text-align: center; margin-bottom: 10px; }
+        h2 { color: #333; font-size: 1.3em; margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+        p { margin-bottom: 10px; line-height: 1.6; }
+        strong { font-weight: bold; }
+        label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; }
+        select, input[type="date"] { /* Estilo general para select y date input */
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px; /* Aumentado margen inferior */
+            box-sizing: border-box;
+        }
+        button[type="submit"] { background-color: #28a745; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
+        button[type="submit"]:hover { background-color: #218838; }
+        
+        .messages { list-style-type: none; padding: 0; margin-bottom: 20px; }
+        .messages li.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 10px; border-radius: 4px; }
+        .messages li.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; border-radius: 4px; }
+        .messages li.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 10px; border-radius: 4px; }
+
+        .cita-details { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .cita-details p { margin-bottom: 8px; font-size: 1em; }
+
+        .form-section { margin-top: 20px; }
+
+        .actions-container { margin-top: 30px; text-align: center; }
+        .actions-container a {
+            text-decoration: none;
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .actions-container a:hover { background-color: #5a6268; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ titulo_pagina }}</h1>
+
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <div class="cita-details">
+            <h2>Detalles del Horario Seleccionado</h2>
+            <p><strong>Profesional:</strong> {{ profesional.user_account.get_full_name|default:profesional.user_account.username }}</p>
+            <p><strong>Especialidad:</strong> {{ profesional.especialidad.nombre_especialidad }}</p>
+            <p><strong>Fecha:</strong> {{ fecha_seleccionada_obj|date:"l, d \d\e F \d\e Y" }}</p>
+            <p><strong>Hora de Inicio:</strong> {{ hora_inicio_slot_obj|time:"H:i" }}</p>
+            <p><strong>Hora de Fin Estimada:</strong> {{ fecha_hora_fin_cita|time:"H:i" }}</p>
+        </div>
+
+        <form method="post" action=""> {# Se envía a la misma URL #}
+            {% csrf_token %}
+            
+            <div class="form-section">
+                <h2>Seleccionar Paciente</h2>
+                {{ form_seleccionar_paciente.as_p }}
+            </div>
+            
+            <button type="submit">Agendar Cita</button>
+        </form>
+
+        <div class="actions-container">
+            <a href="{% url 'agendamiento:consultar_disponibilidad' %}?profesional={{ profesional.id }}&fecha={{ fecha_seleccionada_obj|date:'Y-m-d' }}">Cancelar y Volver a Horarios</a>
+            <a href="{% url 'agendamiento:dashboard_asesor' %}">Volver al Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

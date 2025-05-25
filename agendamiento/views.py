@@ -4,9 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from .decorators import asesor_required, profesional_required, paciente_required
-# ASEGÚRATE DE QUE ConsultaDisponibilidadForm ESTÉ INCLUIDO EN LA IMPORTACIÓN
-from .forms import UserForm, PacienteForm, UserUpdateForm, ConsultaDisponibilidadForm
-from .models import Paciente # ProfesionalSalud y Especialidad ya se importan en forms.py si es necesario allí
+from .forms import UserForm, PacienteForm, UserUpdateForm, ConsultaDisponibilidadForm, SelectPacienteForm
+from .models import Paciente, ProfesionalSalud, PlantillaHorarioMedico, Cita 
+from datetime import datetime, time, timedelta
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils import timezone
 
 @login_required
 def pagina_inicio(request):
@@ -45,7 +48,6 @@ def registrar_paciente(request):
     if request.method == 'POST':
         user_form = UserForm(request.POST, prefix='user')
         paciente_form = PacienteForm(request.POST, prefix='paciente')
-
         if user_form.is_valid() and paciente_form.is_valid():
             new_user = user_form.save(commit=False)
             new_user.set_password(user_form.cleaned_data['password'])
@@ -53,11 +55,9 @@ def registrar_paciente(request):
             new_user.last_name = user_form.cleaned_data.get('last_name', '')
             new_user.email = user_form.cleaned_data.get('email', '')
             new_user.save()
-
             new_paciente = paciente_form.save(commit=False)
             new_paciente.user_account = new_user
             new_paciente.save()
-
             messages.success(request, f'¡Paciente {new_user.first_name} {new_user.last_name} registrado exitosamente!')
             return redirect('agendamiento:dashboard_asesor')
         else:
@@ -65,10 +65,8 @@ def registrar_paciente(request):
     else:
         user_form = UserForm(prefix='user')
         paciente_form = PacienteForm(prefix='paciente')
-
     context = {
-        'user_form': user_form,
-        'paciente_form': paciente_form,
+        'user_form': user_form, 'paciente_form': paciente_form,
         'titulo_pagina': 'Registrar Nuevo Paciente'
     }
     return render(request, 'agendamiento/registrar_paciente_form.html', context)
@@ -77,10 +75,7 @@ def registrar_paciente(request):
 @asesor_required
 def listar_pacientes(request):
     pacientes = Paciente.objects.all().order_by('user_account__last_name', 'user_account__first_name')
-    context = {
-        'pacientes': pacientes,
-        'titulo_pagina': 'Listado de Pacientes'
-    }
+    context = {'pacientes': pacientes, 'titulo_pagina': 'Listado de Pacientes'}
     return render(request, 'agendamiento/listar_pacientes.html', context)
 
 @login_required
@@ -88,11 +83,9 @@ def listar_pacientes(request):
 def actualizar_paciente(request, paciente_id):
     paciente_a_actualizar = get_object_or_404(Paciente, id=paciente_id)
     usuario_a_actualizar = paciente_a_actualizar.user_account
-
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, instance=usuario_a_actualizar, prefix='user')
         paciente_form = PacienteForm(request.POST, instance=paciente_a_actualizar, prefix='paciente')
-
         if user_form.is_valid() and paciente_form.is_valid():
             user_form.save()
             paciente_form.save()
@@ -103,45 +96,89 @@ def actualizar_paciente(request, paciente_id):
     else:
         user_form = UserUpdateForm(instance=usuario_a_actualizar, prefix='user')
         paciente_form = PacienteForm(instance=paciente_a_actualizar, prefix='paciente')
-
     context = {
-        'user_form': user_form,
-        'paciente_form': paciente_form,
+        'user_form': user_form, 'paciente_form': paciente_form,
         'paciente_a_actualizar': paciente_a_actualizar,
         'titulo_pagina': f'Actualizar Paciente: {usuario_a_actualizar.get_full_name() or usuario_a_actualizar.username}'
     }
     return render(request, 'agendamiento/actualizar_paciente_form.html', context)
 
-# NUEVA VISTA PARA CONSULTAR DISPONIBILIDAD
 @login_required
 @asesor_required
 def consultar_disponibilidad(request):
-    # Por ahora, para la solicitud GET, simplemente mostramos el formulario.
-    # En el futuro, si la solicitud GET tiene parámetros (profesional_id y fecha),
-    # procesaremos esos parámetros aquí para buscar y mostrar los slots.
-    # O podríamos manejar la búsqueda de slots cuando el formulario se envíe vía POST.
-    # Vamos a empezar con el formulario GET y lo procesaremos con un POST o un GET con parámetros más adelante.
-
-    form = ConsultaDisponibilidadForm() # Formulario vacío para la primera carga (GET)
-
-    # Aquí irá la lógica para obtener y mostrar los slots disponibles
-    # cuando el formulario se envíe (ej. request.GET o request.POST)
-    # Por ahora, solo pasamos el formulario a la plantilla.
-    slots_disponibles = None # Inicialmente no hay slots para mostrar
+    form = ConsultaDisponibilidadForm()
+    slots_disponibles = []
     profesional_seleccionado = None
     fecha_seleccionada = None
 
-    if request.GET: # Si la solicitud es GET y tiene parámetros (después de enviar el formulario como GET)
-        form = ConsultaDisponibilidadForm(request.GET) # Llenar el form con los datos enviados
+    if request.GET and 'profesional' in request.GET and 'fecha' in request.GET:
+        form = ConsultaDisponibilidadForm(request.GET)
         if form.is_valid():
             profesional_seleccionado = form.cleaned_data['profesional']
             fecha_seleccionada = form.cleaned_data['fecha']
-            # AQUÍ IRÍA LA LÓGICA PARA BUSCAR SLOTS (PENDIENTE)
-            # Ejemplo conceptual (la lógica real será más compleja):
-            # slots_disponibles = buscar_slots(profesional_seleccionado, fecha_seleccionada)
-            messages.info(request, f"Buscando disponibilidad para {profesional_seleccionado} en la fecha {fecha_seleccionada}. Lógica de búsqueda pendiente.")
+            
+            if profesional_seleccionado and fecha_seleccionada:
+                dia_semana_seleccionado = fecha_seleccionada.weekday()
+                
+                plantillas = PlantillaHorarioMedico.objects.filter(
+                    profesional=profesional_seleccionado,
+                    dia_semana=dia_semana_seleccionado
+                ).order_by('hora_inicio_bloque')
 
+                current_tz = timezone.get_current_timezone()
+                inicio_del_dia_seleccionado = timezone.make_aware(datetime.combine(fecha_seleccionada, time.min), current_tz)
+                fin_del_dia_seleccionado = timezone.make_aware(datetime.combine(fecha_seleccionada, time.max), current_tz)
+                
+                citas_ocupadas_qs = Cita.objects.filter(
+                    profesional=profesional_seleccionado,
+                    fecha_hora_inicio_cita__gte=inicio_del_dia_seleccionado,
+                    fecha_hora_inicio_cita__lte=fin_del_dia_seleccionado,
+                    estado_cita='Programada'
+                )
+                
+                rangos_ocupados = []
+                for cita_ocupada in citas_ocupadas_qs:
+                    hora_inicio_local_ocupada = timezone.localtime(cita_ocupada.fecha_hora_inicio_cita, current_tz).time()
+                    hora_fin_local_ocupada = timezone.localtime(cita_ocupada.fecha_hora_fin_cita, current_tz).time()
+                    rangos_ocupados.append(
+                        (hora_inicio_local_ocupada, hora_fin_local_ocupada)
+                    )
+                
+                duracion_consulta = profesional_seleccionado.especialidad.duracion_consulta_minutos
+                
+                for plantilla in plantillas:
+                    hora_inicio_iteracion_naive = datetime.combine(fecha_seleccionada, plantilla.hora_inicio_bloque)
+                    hora_fin_iteracion_bloque_naive = datetime.combine(fecha_seleccionada, plantilla.hora_fin_bloque)
 
+                    hora_inicio_iteracion = timezone.make_aware(hora_inicio_iteracion_naive, current_tz)
+                    hora_fin_iteracion_bloque = timezone.make_aware(hora_fin_iteracion_bloque_naive, current_tz)
+                    
+                    while hora_inicio_iteracion < hora_fin_iteracion_bloque:
+                        hora_fin_slot_propuesto = hora_inicio_iteracion + timedelta(minutes=duracion_consulta)
+                        
+                        if hora_fin_slot_propuesto > hora_fin_iteracion_bloque:
+                            break 
+
+                        slot_esta_ocupado = False
+                        slot_inicio_time_local = hora_inicio_iteracion.astimezone(current_tz).time()
+                        slot_fin_time_local = hora_fin_slot_propuesto.astimezone(current_tz).time()
+
+                        for inicio_ocupado_local, fin_ocupado_local in rangos_ocupados:
+                            if (slot_inicio_time_local < fin_ocupado_local and slot_fin_time_local > inicio_ocupado_local):
+                                slot_esta_ocupado = True
+                                break 
+                        
+                        if not slot_esta_ocupado:
+                            slots_disponibles.append(
+                                (slot_inicio_time_local, slot_fin_time_local) 
+                            )
+                        
+                        hora_inicio_iteracion = hora_fin_slot_propuesto
+                
+                if not slots_disponibles and plantillas.exists():
+                    messages.info(request, f"No hay horarios disponibles para {profesional_seleccionado} el {fecha_seleccionada.strftime('%d/%m/%Y')}.")
+                elif not plantillas.exists():
+                    messages.warning(request, f"{profesional_seleccionado} no tiene un horario configurado para el día seleccionado ({fecha_seleccionada.strftime('%A, %d/%m/%Y')}).")
     context = {
         'form': form,
         'titulo_pagina': 'Consultar Disponibilidad de Citas',
@@ -150,3 +187,78 @@ def consultar_disponibilidad(request):
         'fecha_seleccionada': fecha_seleccionada
     }
     return render(request, 'agendamiento/consultar_disponibilidad_form.html', context)
+
+@login_required
+@asesor_required
+def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_str, hora_inicio_slot_str):
+    profesional = get_object_or_404(ProfesionalSalud, id=profesional_id)
+    try:
+        fecha_obj = datetime.strptime(fecha_seleccionada_str, '%Y-%m-%d').date()
+        hora_obj = datetime.strptime(hora_inicio_slot_str, '%H:%M').time()
+    except ValueError:
+        messages.error(request, "Formato de fecha u hora inválido en la URL.")
+        return redirect('agendamiento:consultar_disponibilidad')
+
+    fecha_hora_inicio_cita_naive = datetime.combine(fecha_obj, hora_obj)
+    current_tz = timezone.get_current_timezone()
+    fecha_hora_inicio_cita_aware = timezone.make_aware(fecha_hora_inicio_cita_naive, current_tz)
+
+    duracion_consulta = profesional.especialidad.duracion_consulta_minutos
+    fecha_hora_fin_cita_aware = fecha_hora_inicio_cita_aware + timedelta(minutes=duracion_consulta)
+
+    if request.method == 'POST':
+        form_seleccionar_paciente = SelectPacienteForm(request.POST)
+        if form_seleccionar_paciente.is_valid():
+            paciente_seleccionado = form_seleccionar_paciente.cleaned_data['paciente']
+            
+            if Cita.objects.filter(profesional=profesional, fecha_hora_inicio_cita=fecha_hora_inicio_cita_aware, estado_cita='Programada').exists():
+                messages.error(request, f"El horario de {hora_inicio_slot_str} para {profesional} el {fecha_obj.strftime('%d/%m/%Y')} ya no está disponible.")
+                return redirect('agendamiento:consultar_disponibilidad')
+
+            try:
+                Cita.objects.create(
+                    paciente=paciente_seleccionado,
+                    profesional=profesional,
+                    asesor_que_agenda=request.user.asesor_perfil,
+                    fecha_hora_inicio_cita=fecha_hora_inicio_cita_aware,
+                    fecha_hora_fin_cita=fecha_hora_fin_cita_aware,
+                    estado_cita='Programada'
+                )
+                
+                if paciente_seleccionado.user_account.email:
+                    asunto = f"Confirmación de Cita Médica - {profesional.especialidad.nombre_especialidad}"
+                    mensaje_email = (
+                        f"Estimado(a) {paciente_seleccionado.user_account.get_full_name()},\n\n"
+                        f"Le confirmamos su cita médica para el servicio de {profesional.especialidad.nombre_especialidad} "
+                        f"con el/la Dr(a). {profesional.user_account.get_full_name()}.\n\n"
+                        f"Fecha: {fecha_obj.strftime('%A, %d de %B de %Y')}\n"
+                        f"Hora: {hora_obj.strftime('%I:%M %p')}\n\n"
+                        f"Por favor, llegue con anticipación.\n\n"
+                        f"Saludos cordiales,\nIPS Medical Integral"
+                    )
+                    try:
+                        send_mail(
+                            asunto, mensaje_email, settings.DEFAULT_FROM_EMAIL,
+                            [paciente_seleccionado.user_account.email], fail_silently=False,
+                        )
+                        messages.success(request, f"Cita agendada para {paciente_seleccionado} con {profesional} el {fecha_obj.strftime('%d/%m/%Y')} a las {hora_obj.strftime('%H:%M')}. Se envió correo de confirmación.")
+                    except Exception as e:
+                        messages.warning(request, f"Cita agendada para {paciente_seleccionado} con {profesional} el {fecha_obj.strftime('%d/%m/%Y')} a las {hora_obj.strftime('%H:%M')}. Hubo un problema al enviar el correo de confirmación: {e}")
+                else:
+                    messages.success(request, f"Cita agendada para {paciente_seleccionado} con {profesional} el {fecha_obj.strftime('%d/%m/%Y')} a las {hora_obj.strftime('%H:%M')}. (El paciente no tiene email registrado para notificación).")
+                return redirect('agendamiento:dashboard_asesor')
+            except Exception as e:
+                messages.error(request, f"Error al crear la cita: {e}")
+        else:
+            messages.error(request, "Por favor seleccione un paciente válido.")
+    else: # Solicitud GET
+        form_seleccionar_paciente = SelectPacienteForm()
+    context = {
+        'profesional': profesional, 
+        'fecha_seleccionada_obj': fecha_obj,
+        'hora_inicio_slot_obj': hora_obj, 
+        'fecha_hora_fin_cita': fecha_hora_fin_cita_aware,
+        'titulo_pagina': 'Confirmar Cita para Paciente',
+        'form_seleccionar_paciente': form_seleccionar_paciente,
+    }
+    return render(request, 'agendamiento/seleccionar_paciente_para_cita.html', context)

@@ -70,8 +70,8 @@
         <ul>
             <li><a href="{% url 'agendamiento:registrar_paciente' %}">Registrar Nuevo Paciente</a></li>
             <li><a href="{% url 'agendamiento:listar_pacientes' %}">Ver/Gestionar Pacientes</a></li>
-            <li><a href="{% url 'agendamiento:consultar_disponibilidad' %}">Consultar Disponibilidad de Profesionales</a></li> {# MODIFICADO ESTE ENLACE #}
-            <li><a href="#">Agendar Nueva Cita</a></li> {# Marcador de posición #}
+            <li><a href="{% url 'agendamiento:consultar_disponibilidad' %}">Consultar Disponibilidad de Profesionales</a></li>
+            {# Se eliminó la línea "Agendar Nueva Cita" que era redundante o un marcador de posición #}
         </ul>
     </div>
 </body>

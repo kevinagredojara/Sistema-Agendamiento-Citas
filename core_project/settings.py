@@ -131,5 +131,6 @@ LOGIN_URL = reverse_lazy('agendamiento:login')
 
 LOGIN_REDIRECT_URL = '/'
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
