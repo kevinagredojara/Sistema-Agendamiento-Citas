@@ -1,9 +1,9 @@
 # agendamiento/forms.py
 from django import forms
 from django.contrib.auth.models import User
-from .models import Paciente, ProfesionalSalud, Especialidad # Asegúrate de que Especialidad esté importada
-from datetime import date # Para obtener la fecha actual
-from django.utils import timezone # Para obtener la fecha actual con zona horaria
+from .models import Paciente, ProfesionalSalud, Especialidad
+from datetime import date
+from django.utils import timezone
 
 class UserForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(), label="Contraseña")
@@ -82,25 +82,31 @@ class ConsultaDisponibilidadForm(forms.Form):
         super(ConsultaDisponibilidadForm, self).__init__(*args, **kwargs)
         self.fields['profesional'].label_from_instance = lambda obj: f"{obj.user_account.last_name}, {obj.user_account.first_name} ({obj.especialidad.nombre_especialidad})"
 
-    # --- MÉTODO DE VALIDACIÓN AÑADIDO PARA EL CAMPO 'fecha' ---
     def clean_fecha(self):
         fecha_seleccionada = self.cleaned_data.get('fecha')
-        # Obtener la fecha actual en la zona horaria del proyecto para una comparación correcta
         hoy = timezone.localdate() 
-
         if fecha_seleccionada and fecha_seleccionada < hoy:
             raise forms.ValidationError("No se puede seleccionar una fecha pasada. Por favor, elija una fecha actual o futura.")
         return fecha_seleccionada
-    # --- FIN DE MÉTODO DE VALIDACIÓN AÑADIDO ---
 
-class SelectPacienteForm(forms.Form):
-    paciente = forms.ModelChoiceField(
-        queryset=Paciente.objects.filter(user_account__is_active=True).order_by('user_account__last_name', 'user_account__first_name'),
-        label="Seleccionar Paciente",
-        empty_label="Seleccione un paciente...",
-        widget=forms.Select(attrs={'class': 'form-control'})
+# FORMULARIO PARA BUSCAR PACIENTE POR DOCUMENTO
+class BuscarPacientePorDocumentoForm(forms.Form):
+    numero_documento = forms.CharField(
+        label="Número de Documento del Paciente",
+        max_length=20, # Debe coincidir con el max_length del modelo Paciente
+        required=True, # Hacemos que sea requerido para la búsqueda
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese el documento a buscar'})
     )
 
-    def __init__(self, *args, **kwargs):
-        super(SelectPacienteForm, self).__init__(*args, **kwargs)
-        self.fields['paciente'].label_from_instance = lambda obj: f"{obj.user_account.last_name}, {obj.user_account.first_name} (Doc: {obj.numero_documento})"
+# ELIMINAMOS O COMENTAMOS SelectPacienteForm ya que no lo usaremos en este flujo por ahora
+# class SelectPacienteForm(forms.Form):
+#     paciente = forms.ModelChoiceField(
+#         queryset=Paciente.objects.filter(user_account__is_active=True).order_by('user_account__last_name', 'user_account__first_name'),
+#         label="Seleccionar Paciente",
+#         empty_label="Seleccione un paciente...",
+#         widget=forms.Select(attrs={'class': 'form-control'})
+#     )
+#
+#     def __init__(self, *args, **kwargs):
+#         super(SelectPacienteForm, self).__init__(*args, **kwargs)
+#         self.fields['paciente'].label_from_instance = lambda obj: f"{obj.user_account.last_name}, {obj.user_account.first_name} (Doc: {obj.numero_documento})"
