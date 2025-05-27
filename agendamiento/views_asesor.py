@@ -1,8 +1,10 @@
 # agendamiento/views_asesor.py
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse 
 from django.urls import reverse 
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.views.decorators.http import require_POST 
 from .decorators import asesor_required
 from .forms import (
     UserForm, PacienteForm, UserUpdateForm, 
@@ -95,7 +97,7 @@ def consultar_disponibilidad(request):
     fecha_seleccionada = None 
     if form.is_valid():
         profesional_seleccionado = form.cleaned_data['profesional']
-        fecha_seleccionada = form.cleaned_data['fecha'] # Es un objeto date
+        fecha_seleccionada = form.cleaned_data['fecha'] 
         if profesional_seleccionado and fecha_seleccionada:
             dia_semana_seleccionado = fecha_seleccionada.weekday()
             plantillas = PlantillaHorarioMedico.objects.filter(
@@ -159,7 +161,7 @@ def consultar_disponibilidad(request):
 def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_str, hora_inicio_slot_str):
     profesional = get_object_or_404(ProfesionalSalud, id=profesional_id)
     try:
-        fecha_obj = datetime.strptime(fecha_seleccionada_str, '%Y-%m-%d').date() # objeto date
+        fecha_obj = datetime.strptime(fecha_seleccionada_str, '%Y-%m-%d').date() 
         hora_obj = datetime.strptime(hora_inicio_slot_str, '%H:%M').time()
     except ValueError:
         messages.error(request, "Formato de fecha u hora inválido en la URL.")
@@ -249,7 +251,6 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
 @login_required
 @asesor_required
 def visualizar_citas_gestionadas(request):
-    # ... (sin cambios) ...
     lista_citas = Cita.objects.select_related(
         'paciente__user_account', 
         'profesional__user_account', 
@@ -315,7 +316,7 @@ def modificar_cita(request, cita_id):
             return redirect('agendamiento:modificar_cita', cita_id=cita_actual.id)
 
         current_tz = timezone.get_current_timezone()
-        nueva_fecha_hora_inicio = timezone.make_aware(datetime.combine(fecha_nueva_obj, hora_nueva_obj), current_tz) # datetime
+        nueva_fecha_hora_inicio = timezone.make_aware(datetime.combine(fecha_nueva_obj, hora_nueva_obj), current_tz)
         
         if profesional_nuevo.id == cita_actual.profesional_id and nueva_fecha_hora_inicio == cita_actual.fecha_hora_inicio_cita:
             messages.info(request, "No se han realizado cambios en los detalles de la cita, ya que los nuevos datos son idénticos a los actuales.")
@@ -347,9 +348,8 @@ def modificar_cita(request, cita_id):
         profesional_nuevo_nombre_completo = profesional_nuevo.user_account.get_full_name()
         especialidad_nombre = profesional_nuevo.especialidad.nombre_especialidad
         
-        # CORRECCIÓN DEL FORMATO DE FECHA AQUÍ 👇
         de_str = _('de')
-        dia_semana_str_msg = formats.date_format(nueva_fecha_hora_inicio, "l") # Usar datetime completo
+        dia_semana_str_msg = formats.date_format(nueva_fecha_hora_inicio, "l") 
         dia_num_str_msg = formats.date_format(nueva_fecha_hora_inicio, "d")
         mes_str_msg = formats.date_format(nueva_fecha_hora_inicio, "F")
         anho_str_msg = formats.date_format(nueva_fecha_hora_inicio, "Y")
@@ -366,7 +366,6 @@ def modificar_cita(request, cita_id):
         if cita_actual.paciente.user_account.email:
             asunto = f"Actualización de su Cita Médica - {especialidad_nombre}"
             hora_formateada_email = timezone.localtime(nueva_fecha_hora_inicio).strftime('%I:%M %p').lower()
-            # Usamos la misma fecha_formateada_msg para consistencia en el correo
             mensaje_email = (
                 f"Estimado(a) {paciente_nombre_completo},\n\n"
                 f"Le informamos que su cita médica ha sido modificada.\n\n"
@@ -394,7 +393,7 @@ def modificar_cita(request, cita_id):
         request.session['modificar_cita_get_params'] = request.GET.copy() 
         if form.is_valid():
             profesional_nuevo = form.cleaned_data['profesional']
-            fecha_nueva = form.cleaned_data['fecha_cita'] # objeto date
+            fecha_nueva = form.cleaned_data['fecha_cita'] 
             profesional_seleccionado_para_slots = profesional_nuevo
             fecha_seleccionada_para_slots = fecha_nueva
             dia_semana_seleccionado = fecha_nueva.weekday()
@@ -517,3 +516,73 @@ def confirmar_modificacion_cita(request, cita_id):
         'titulo_pagina': f"Confirmar Modificación Cita ID: {cita_actual.id}"
     }
     return render(request, 'agendamiento/confirmar_modificacion_cita_template.html', context)
+
+
+# VISTA PARA CONFIRMAR CANCELACIÓN (HU-ASE-008) - Renderiza la plantilla
+@login_required
+@asesor_required
+def confirmar_cancelacion_cita(request, cita_id):
+    cita_a_cancelar = get_object_or_404(Cita, id=cita_id)
+
+    if cita_a_cancelar.estado_cita != 'Programada':
+        messages.warning(request, f"La cita para {cita_a_cancelar.paciente.user_account.get_full_name()} el {formats.date_format(cita_a_cancelar.fecha_hora_inicio_cita, 'l, d \\d\\e F \\d\\e Y, H:i')} ya no estaba 'Programada' (estado actual: '{cita_a_cancelar.get_estado_cita_display()}'). No se puede cancelar desde esta opción.")
+        return redirect('agendamiento:visualizar_citas_gestionadas')
+    
+    context = {
+        'cita_a_cancelar': cita_a_cancelar,
+        'titulo_pagina': f"Confirmar Cancelación de Cita" # Eliminamos ID de aquí también
+    }
+    return render(request, 'agendamiento/confirmar_cancelacion_cita_template.html', context)
+
+# VISTA PARA EJECUTAR LA CANCELACIÓN (HU-ASE-008) - Lógica POST
+@login_required
+@asesor_required
+@require_POST 
+def ejecutar_cancelacion_cita(request, cita_id):
+    cita_a_cancelar = get_object_or_404(Cita, id=cita_id)
+
+    if cita_a_cancelar.estado_cita != 'Programada':
+        messages.warning(request, f"La cita para {cita_a_cancelar.paciente.user_account.get_full_name()} el {formats.date_format(cita_a_cancelar.fecha_hora_inicio_cita, 'l, d \\d\\e F \\d\\e Y, H:i')} ya no estaba 'Programada'. No se realizó ninguna acción.")
+        return redirect('agendamiento:visualizar_citas_gestionadas')
+
+    # Guardar detalles para el mensaje y correo antes de cambiar el estado
+    paciente_nombre = cita_a_cancelar.paciente.user_account.get_full_name()
+    profesional_nombre = cita_a_cancelar.profesional.user_account.get_full_name()
+    especialidad_nombre = cita_a_cancelar.profesional.especialidad.nombre_especialidad
+    
+    de_str = _('de')
+    dia_semana_str = formats.date_format(cita_a_cancelar.fecha_hora_inicio_cita, "l")
+    dia_num_str = formats.date_format(cita_a_cancelar.fecha_hora_inicio_cita, "d")
+    mes_str = formats.date_format(cita_a_cancelar.fecha_hora_inicio_cita, "F")
+    anho_str = formats.date_format(cita_a_cancelar.fecha_hora_inicio_cita, "Y")
+    fecha_cita_formateada = f"{dia_semana_str}, {dia_num_str} {de_str} {mes_str} {de_str} {anho_str}"
+    
+    # Usar el objeto datetime completo para formatear la hora para el mensaje
+    hora_cita_formateada_msg = timezone.localtime(cita_a_cancelar.fecha_hora_inicio_cita).strftime('%H:%M')
+    # Para el correo, se puede usar am/pm si se prefiere
+    hora_cita_formateada_email = timezone.localtime(cita_a_cancelar.fecha_hora_inicio_cita).strftime('%I:%M %p').lower()
+
+    cita_a_cancelar.estado_cita = 'Cancelada'
+    cita_a_cancelar.save()
+
+    mensaje_exito = f"La cita para {paciente_nombre} con {profesional_nombre} el {fecha_cita_formateada} a las {hora_cita_formateada_msg} ha sido cancelada exitosamente."
+
+    if cita_a_cancelar.paciente.user_account.email:
+        asunto = f"Cancelación de su Cita Médica - {especialidad_nombre}"
+        mensaje_email = (
+            f"Estimado(a) {paciente_nombre},\n\n"
+            f"Le informamos que su cita médica con {profesional_nombre} "
+            f"({especialidad_nombre}) programada para el {fecha_cita_formateada} "
+            f"a las {hora_cita_formateada_email} ha sido CANCELADA.\n\n"
+            f"Si tiene alguna consulta, por favor contáctenos.\n\n"
+            f"Saludos cordiales,\nIPS Medical Integral"
+        )
+        try:
+            send_mail(asunto, mensaje_email, settings.DEFAULT_FROM_EMAIL, [cita_a_cancelar.paciente.user_account.email], fail_silently=False)
+            messages.success(request, f"{mensaje_exito} Se envió correo de notificación al paciente.")
+        except Exception as e:
+            messages.warning(request, f"{mensaje_exito} Hubo un problema al enviar el correo de notificación al paciente: {e}")
+    else:
+        messages.success(request, f"{mensaje_exito} (El paciente no tiene email registrado para notificación).")
+        
+    return redirect('agendamiento:visualizar_citas_gestionadas')

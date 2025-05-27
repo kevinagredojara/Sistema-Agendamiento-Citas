@@ -7,13 +7,13 @@
     <style>
         body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
         header { background-color: #0056b3; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-        header .header-title { font-size: 1.2em; font-weight: bold; }
-        header a, header button.header-btn {
+        header a.button-header, header button.header-btn {
             color: white; text-decoration: none; background-color: #007bff; 
             padding: 5px 10px; border-radius: 4px; font-size: 0.9em; 
             margin-left: 10px; border: none; cursor: pointer;
         }
-        header a:hover, header button.header-btn:hover { background-color: #0056b3; }
+        header a.button-header:hover, header button.header-btn:hover { background-color: #0056b3; }
+        
         .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 95%; margin: 20px auto; }
         h1 { color: #0056b3; text-align: center; margin-top: 0; margin-bottom: 20px;}
         .messages { list-style-type: none; padding: 0; margin: 0 0 20px 0; text-align: center; }
@@ -130,7 +130,7 @@
 </head>
 <body>
     <header>
-        <a href="{% url 'agendamiento:dashboard_asesor' %}" class="button-primary">← Volver al Dashboard</a>
+        <a href="{% url 'agendamiento:dashboard_asesor' %}" class="button-header button-primary">← Volver al Dashboard</a>
         <div class="header-user-info">
             {% if user.is_authenticated %}
                 <strong>Usuario: {{ user.username }}</strong>
@@ -189,9 +189,9 @@
                         <td>{{ cita.get_estado_cita_display }}</td>
                         <td>{{ cita.asesor_que_agenda.user_account.get_full_name|default:cita.asesor_que_agenda.user_account.username|default:"N/A" }}</td>
                         <td> 
-                            {# CAMBIO EN EL ENLACE DEL BOTÓN "Modificar" 👇 #}
                             <a href="{% url 'agendamiento:modificar_cita' cita_id=cita.id %}" class="action-button button-modify">Modificar</a>
-                            <a href="#" class="action-button button-cancel">Cancelar</a> {# El de cancelar aún es placeholder #}
+                            {# CAMBIO EN EL ENLACE DEL BOTÓN "Cancelar" 👇 #}
+                            <a href="{% url 'agendamiento:confirmar_cancelacion_cita' cita_id=cita.id %}" class="action-button button-cancel">Cancelar</a>
                         </td>
                     </tr>
                     {% endfor %}
