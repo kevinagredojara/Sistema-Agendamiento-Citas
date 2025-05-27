@@ -4,6 +4,7 @@ from django.contrib.auth import views as auth_views
 
 from . import views  # Para las vistas generales que quedaron en views.py
 from . import views_asesor  # Para las vistas específicas del asesor
+from . import views_profesional # Para las vistas del profesional
 
 app_name = 'agendamiento'
 
@@ -43,7 +44,10 @@ urlpatterns = [
     path('cita/<int:cita_id>/modificar/confirmar/', views_asesor.confirmar_modificacion_cita, name='confirmar_modificacion_cita'),
 
     path('cita/<int:cita_id>/cancelar/confirmar/', views_asesor.confirmar_cancelacion_cita, name='confirmar_cancelacion_cita'),
-    
-    # NUEVA URL PARA EJECUTAR LA CANCELACIÓN DE CITA (HU-ASE-008) 👇
     path('cita/<int:cita_id>/cancelar/ejecutar/', views_asesor.ejecutar_cancelacion_cita, name='ejecutar_cancelacion_cita'),
+    
+    path('profesional/agenda/', views_profesional.ver_agenda_profesional, name='ver_agenda_profesional'),
+
+    # NUEVA URL PARA VER DETALLES DEL PACIENTE DE UNA CITA (HU-MED-005) 👇
+    path('profesional/cita/<int:cita_id>/detalles-paciente/', views_profesional.ver_detalles_paciente_cita, name='ver_detalles_paciente_cita'),
 ]

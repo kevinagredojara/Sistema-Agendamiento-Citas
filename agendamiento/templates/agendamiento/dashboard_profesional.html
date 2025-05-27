@@ -18,7 +18,6 @@
         ul li a { text-decoration: none; color: #007bff; font-size: 1.1em; }
         ul li a:hover { text-decoration: underline; }
         .user-info { text-align: right; margin-bottom: 20px; font-size: 0.9em; }
-        /* Estilos específicos para botones del header si es necesario */
         header .button-logout { background-color: #dc3545; }
         header .button-logout:hover { background-color: #c82333; }
         header .button-change-password { background-color: #ffc107; color: #212529; }
@@ -44,9 +43,10 @@
 
         <h2>Acciones Rápidas:</h2>
         <ul>
-            <li><a href="#">Ver Mi Agenda de Hoy</a></li>
-            <li><a href="#">Consultar Citas Anteriores</a></li>
-            <li><a href="#">Consultar Citas Futuras</a></li>
+            <li><a href="{% url 'agendamiento:ver_agenda_profesional' %}">Ver Mi Agenda</a></li> 
+            {# ENLACES REDUNDANTES ELIMINADOS 👇 #}
+            {# <li><a href="#">Consultar Citas Anteriores (Próximamente)</a></li> #}
+            {# <li><a href="#">Consultar Citas Futuras (Próximamente)</a></li> #}
             {# Más adelante aquí irán los enlaces a las funcionalidades reales del profesional #}
         </ul>
     </div>

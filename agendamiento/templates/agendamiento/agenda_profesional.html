@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo_pagina|default:"Mi Agenda" }} - Sistema de Citas</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
+        header { background-color: #0056b3; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        header a.button-header, header button.header-btn {
+            color: white; text-decoration: none; background-color: #007bff; 
+            padding: 5px 10px; border-radius: 4px; font-size: 0.9em; 
+            margin-left: 10px; border: none; cursor: pointer;
+        }
+        header a.button-header:hover, header button.header-btn:hover { background-color: #0056b3; }
+        
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 90%; margin: 20px auto; }
+        h1 { color: #0056b3; text-align: center; margin-top: 0; margin-bottom: 10px;} 
+        .sub-header-info { text-align: center; margin-bottom: 20px; }
+        .sub-header-info p { margin: 5px 0; font-size: 1.1em; }
+
+        .messages { list-style-type: none; padding: 0; margin: 0 0 20px 0; text-align: center; }
+        .messages li { padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; border: 1px solid transparent; }
+        .messages li.success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .messages li.error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .messages li.info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .messages li.warning { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
+
+        .date-selector-form {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+        }
+        .date-selector-form label {
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+        .date-selector-form input[type="date"] {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+        .date-selector-form button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95em;
+        }
+        .date-selector-form button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        .agenda-section {
+            margin-top: 20px;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 0; } 
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: center; 
+            font-size: 0.9em; 
+            vertical-align: middle; 
+        }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .no-citas { text-align: center; color: #777; margin-top: 30px; font-size: 1.1em; }
+        
+        .action-link {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 2px;
+            font-size: 0.85em;
+            text-decoration: none;
+            border: 1px solid #007bff;
+            color: #007bff;
+            border-radius: 4px;
+        }
+        .action-link:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        .action-link-assist { 
+             border-color: #28a745;
+             color: #28a745;
+        }
+        .action-link-assist:hover {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .button-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
+        .button-primary:hover { background-color: #0056b3; border-color: #0056b3;}
+        .header-user-info { display: flex; align-items: center; }
+        .header-user-info strong { margin-right: 15px; }
+        .header-user-info .button-change-password { background-color: #ffc107; color: #212529; }
+        .header-user-info .button-change-password:hover { background-color: #e0a800; }
+        .header-user-info form button.header-btn { background-color: #dc3545; }
+        .header-user-info form button.header-btn:hover { background-color: #c82333; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="{% url 'agendamiento:dashboard_profesional' %}" class="button-header button-primary">← Volver al Dashboard</a>
+        <div class="header-user-info">
+            {% if user.is_authenticated %}
+                <strong>Usuario: {{ user.username }} (Profesional)</strong>
+                <a href="{% url 'agendamiento:password_change' %}" class="button-change-password header-btn">Cambiar Contraseña</a>
+                <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline; margin-left: 10px;">
+                    {% csrf_token %}
+                    <button type="submit" class="header-btn">Cerrar Sesión</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>{{ titulo_pagina|default:"Mi Agenda" }}</h1>
+        {% if profesional_actual %}
+            <div class="sub-header-info">
+                <p>Dr(a). {{ profesional_actual.user_account.get_full_name|default:user.username }}</p>
+                <p>Especialidad: {{ profesional_actual.especialidad.nombre_especialidad }}</p>
+            </div>
+        {% endif %}
+
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <form method="get" action="{% url 'agendamiento:ver_agenda_profesional' %}" class="date-selector-form">
+            <label for="fecha_agenda_input">Seleccionar fecha:</label>
+            <input type="date" id="fecha_agenda_input" name="fecha_agenda" value="{{ fecha_agenda|date:'Y-m-d' }}">
+            <button type="submit">Ver Fecha</button>
+        </form>
+
+        <div class="agenda-section">
+            {% if citas_del_dia %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hora Inicio</th>
+                            <th>Hora Fin</th>
+                            <th>Paciente</th>
+                            <th>Documento Paciente</th>
+                            <th>Estado</th>
+                            <th>Acciones</th> 
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cita in citas_del_dia %}
+                        <tr>
+                            <td>{{ cita.fecha_hora_inicio_cita|date:"H:i" }}</td>
+                            <td>{{ cita.fecha_hora_fin_cita|date:"H:i" }}</td>
+                            <td>{{ cita.paciente.user_account.get_full_name|default:cita.paciente }}</td>
+                            <td>{{ cita.paciente.numero_documento }}</td>
+                            <td>{{ cita.get_estado_cita_display }}</td>
+                            <td>
+                                {# CAMBIO EN EL ENLACE "Ver Paciente" PARA PASAR LA FECHA DE LA AGENDA ACTUAL 👇 #}
+                                <a href="{% url 'agendamiento:ver_detalles_paciente_cita' cita_id=cita.id %}?fecha_agenda_original={{ fecha_agenda|date:'Y-m-d' }}" class="action-link">Ver Paciente</a>
+                                {% if cita.estado_cita == 'Programada' %}
+                                    <a href="#" class="action-link action-link-assist">Registrar Asistencia</a> {# Placeholder #}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="no-citas">No tiene citas programadas para el día {{ fecha_agenda_formateada }}.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
