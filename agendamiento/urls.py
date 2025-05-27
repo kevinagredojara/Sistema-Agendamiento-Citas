@@ -48,7 +48,10 @@ urlpatterns = [
     
     path('profesional/agenda/', views_profesional.ver_agenda_profesional, name='ver_agenda_profesional'),
     path('profesional/cita/<int:cita_id>/detalles-paciente/', views_profesional.ver_detalles_paciente_cita, name='ver_detalles_paciente_cita'),
-
-    # NUEVA URL PARA REGISTRAR ASISTENCIA (HU-MED-004) 👇
+    
+    # URL que procesa el POST del registro de asistencia (ya existe y está bien)
     path('profesional/cita/<int:cita_id>/registrar-asistencia/', views_profesional.registrar_asistencia_cita, name='registrar_asistencia_cita'),
+
+    # NUEVA URL PARA LA PÁGINA DE CONFIRMACIÓN DE REGISTRO DE ASISTENCIA (HU-MED-004) 👇
+    path('profesional/cita/<int:cita_id>/asistencia/confirmar/', views_profesional.confirmar_asistencia_cita, name='confirmar_asistencia_cita'),
 ]

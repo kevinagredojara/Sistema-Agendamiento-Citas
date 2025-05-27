@@ -74,35 +74,27 @@
         tr:nth-child(even) { background-color: #f2f2f2; }
         .no-citas { text-align: center; color: #777; margin-top: 30px; font-size: 1.1em; }
         
-        .action-link, .action-button-inline { /* Unificando un poco el estilo base */
+        .action-link { 
             display: inline-block;
             padding: 4px 8px;
             margin: 2px;
             font-size: 0.85em;
             text-decoration: none;
+            color: white; 
             border: 1px solid transparent;
-            color: white;
             border-radius: 4px;
             cursor: pointer;
             text-align: center;
             vertical-align: middle;
             line-height: 1.4;
         }
-        .action-link { /* Para enlaces que parecen botones */
-             border-color: #007bff;
-             color: #007bff;
-        }
-        .action-link:hover {
-            background-color: #007bff;
-            color: white;
-        }
+        .action-link-view-patient { background-color: #007bff; border-color: #007bff; } 
+        .action-link-view-patient:hover { background-color: #0056b3; border-color: #0056b3; }
         
-        /* Estilos para botones de Asistencia */
-        .action-button-realizada { background-color: #28a745; border-color: #28a745; } /* Verde */
-        .action-button-realizada:hover { background-color: #218838; border-color: #1e7e34;}
-        .action-button-no-asistio { background-color: #ffc107; border-color: #ffc107; color: #212529;} /* Amarillo */
-        .action-button-no-asistio:hover { background-color: #e0a800; border-color: #d39e00;}
-
+        .action-link-realizada { background-color: #28a745; border-color: #28a745; } 
+        .action-link-realizada:hover { background-color: #218838; border-color: #1e7e34;}
+        .action-link-no-asistio { background-color: #ffc107; border-color: #ffc107; color: #212529;} 
+        .action-link-no-asistio:hover { background-color: #e0a800; border-color: #d39e00;}
 
         .button-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
         .button-primary:hover { background-color: #0056b3; border-color: #0056b3;}
@@ -174,20 +166,15 @@
                             <td>{{ cita.paciente.numero_documento }}</td>
                             <td>{{ cita.get_estado_cita_display }}</td>
                             <td>
-                                <a href="{% url 'agendamiento:ver_detalles_paciente_cita' cita_id=cita.id %}?fecha_agenda_original={{ fecha_agenda|date:'Y-m-d' }}" class="action-link">Ver Paciente</a>
+                                <a href="{% url 'agendamiento:ver_detalles_paciente_cita' cita_id=cita.id %}?fecha_agenda_original={{ fecha_agenda|date:'Y-m-d' }}" class="action-link action-link-view-patient">Ver Paciente</a>
                                 
-                                {# CAMBIO: Botones para Registrar Asistencia 👇 #}
-                                {% if cita.estado_cita == 'Programada' %}
-                                    <form action="{% url 'agendamiento:registrar_asistencia_cita' cita_id=cita.id %}" method="post" style="display: inline;">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="nuevo_estado" value="Realizada">
-                                        <button type="submit" class="action-button-inline action-button-realizada">Asistió</button>
-                                    </form>
-                                    <form action="{% url 'agendamiento:registrar_asistencia_cita' cita_id=cita.id %}" method="post" style="display: inline;">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="nuevo_estado" value="No_Asistio">
-                                        <button type="submit" class="action-button-inline action-button-no-asistio">No Asistió</button>
-                                    </form>
+                                {# CAMBIO: Condición para mostrar botones de asistencia 👇 #}
+                                {% if cita.estado_cita == 'Programada' and cita.puede_registrar_asistencia %}
+                                    <a href="{% url 'agendamiento:confirmar_asistencia_cita' cita_id=cita.id %}?estado_propuesto=Realizada&fecha_agenda={{ fecha_agenda|date:'Y-m-d' }}" class="action-link action-link-realizada">Asistió</a>
+                                    <a href="{% url 'agendamiento:confirmar_asistencia_cita' cita_id=cita.id %}?estado_propuesto=No_Asistio&fecha_agenda={{ fecha_agenda|date:'Y-m-d' }}" class="action-link action-link-no-asistio">No Asistió</a>
+                                {% elif cita.estado_cita == 'Programada' and not cita.puede_registrar_asistencia %}
+                                    {# Opcional: Mostrar un texto indicando por qué no se pueden registrar aún #}
+                                    <span style="font-size: 0.8em; color: #6c757d;">Asistencia pendiente</span>
                                 {% endif %}
                             </td>
                         </tr>
