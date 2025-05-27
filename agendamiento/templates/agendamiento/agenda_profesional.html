@@ -74,28 +74,35 @@
         tr:nth-child(even) { background-color: #f2f2f2; }
         .no-citas { text-align: center; color: #777; margin-top: 30px; font-size: 1.1em; }
         
-        .action-link {
+        .action-link, .action-button-inline { /* Unificando un poco el estilo base */
             display: inline-block;
             padding: 4px 8px;
             margin: 2px;
             font-size: 0.85em;
             text-decoration: none;
-            border: 1px solid #007bff;
-            color: #007bff;
+            border: 1px solid transparent;
+            color: white;
             border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            vertical-align: middle;
+            line-height: 1.4;
+        }
+        .action-link { /* Para enlaces que parecen botones */
+             border-color: #007bff;
+             color: #007bff;
         }
         .action-link:hover {
             background-color: #007bff;
             color: white;
         }
-        .action-link-assist { 
-             border-color: #28a745;
-             color: #28a745;
-        }
-        .action-link-assist:hover {
-            background-color: #28a745;
-            color: white;
-        }
+        
+        /* Estilos para botones de Asistencia */
+        .action-button-realizada { background-color: #28a745; border-color: #28a745; } /* Verde */
+        .action-button-realizada:hover { background-color: #218838; border-color: #1e7e34;}
+        .action-button-no-asistio { background-color: #ffc107; border-color: #ffc107; color: #212529;} /* Amarillo */
+        .action-button-no-asistio:hover { background-color: #e0a800; border-color: #d39e00;}
+
 
         .button-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
         .button-primary:hover { background-color: #0056b3; border-color: #0056b3;}
@@ -167,10 +174,20 @@
                             <td>{{ cita.paciente.numero_documento }}</td>
                             <td>{{ cita.get_estado_cita_display }}</td>
                             <td>
-                                {# CAMBIO EN EL ENLACE "Ver Paciente" PARA PASAR LA FECHA DE LA AGENDA ACTUAL 👇 #}
                                 <a href="{% url 'agendamiento:ver_detalles_paciente_cita' cita_id=cita.id %}?fecha_agenda_original={{ fecha_agenda|date:'Y-m-d' }}" class="action-link">Ver Paciente</a>
+                                
+                                {# CAMBIO: Botones para Registrar Asistencia 👇 #}
                                 {% if cita.estado_cita == 'Programada' %}
-                                    <a href="#" class="action-link action-link-assist">Registrar Asistencia</a> {# Placeholder #}
+                                    <form action="{% url 'agendamiento:registrar_asistencia_cita' cita_id=cita.id %}" method="post" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="nuevo_estado" value="Realizada">
+                                        <button type="submit" class="action-button-inline action-button-realizada">Asistió</button>
+                                    </form>
+                                    <form action="{% url 'agendamiento:registrar_asistencia_cita' cita_id=cita.id %}" method="post" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="nuevo_estado" value="No_Asistio">
+                                        <button type="submit" class="action-button-inline action-button-no-asistio">No Asistió</button>
+                                    </form>
                                 {% endif %}
                             </td>
                         </tr>

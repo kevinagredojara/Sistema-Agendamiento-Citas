@@ -47,7 +47,8 @@ urlpatterns = [
     path('cita/<int:cita_id>/cancelar/ejecutar/', views_asesor.ejecutar_cancelacion_cita, name='ejecutar_cancelacion_cita'),
     
     path('profesional/agenda/', views_profesional.ver_agenda_profesional, name='ver_agenda_profesional'),
-
-    # NUEVA URL PARA VER DETALLES DEL PACIENTE DE UNA CITA (HU-MED-005) 👇
     path('profesional/cita/<int:cita_id>/detalles-paciente/', views_profesional.ver_detalles_paciente_cita, name='ver_detalles_paciente_cita'),
+
+    # NUEVA URL PARA REGISTRAR ASISTENCIA (HU-MED-004) 👇
+    path('profesional/cita/<int:cita_id>/registrar-asistencia/', views_profesional.registrar_asistencia_cita, name='registrar_asistencia_cita'),
 ]
