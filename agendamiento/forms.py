@@ -1,7 +1,6 @@
 # agendamiento/forms.py
 from django import forms
 from django.contrib.auth.models import User
-# Asegúrate de que ProfesionalSalud y Cita estén importados si no lo están ya
 from .models import Paciente, ProfesionalSalud, Especialidad, Cita 
 from datetime import date
 from django.utils import timezone
@@ -73,12 +72,12 @@ class ConsultaDisponibilidadForm(forms.Form):
         label="Profesional de la Salud",
         empty_label="Seleccione un profesional...",
         widget=forms.Select(attrs={'class': 'form-control'}),
-        required=True # Lo mantenemos requerido para la consulta de disponibilidad
+        required=True
     )
     fecha = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         label="Fecha para la Consulta",
-        required=True # Lo mantenemos requerido para la consulta de disponibilidad
+        required=True
     )
 
     def __init__(self, *args, **kwargs):
@@ -100,7 +99,6 @@ class BuscarPacientePorDocumentoForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese el documento a buscar'})
     )
 
-# NUEVO FORMULARIO PARA FILTROS DE CITAS 👇
 class CitaFilterForm(forms.Form):
     fecha_desde = forms.DateField(
         label='Fecha Desde',
@@ -116,10 +114,9 @@ class CitaFilterForm(forms.Form):
         queryset=ProfesionalSalud.objects.filter(user_account__is_active=True).order_by('user_account__last_name', 'user_account__first_name'),
         required=False,
         label='Profesional',
-        empty_label="Todos los profesionales", # Para permitir no filtrar por profesional
+        empty_label="Todos los profesionales",
         widget=forms.Select(attrs={'class': 'form-control'})
     )
-    # Construimos las opciones para el estado, añadiendo una opción para "Todos"
     ESTADOS_FILTRO_CHOICES = [('', 'Todos los estados')] + Cita.ESTADOS_CITA
     estado_cita = forms.ChoiceField(
         choices=ESTADOS_FILTRO_CHOICES,
@@ -130,10 +127,7 @@ class CitaFilterForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(CitaFilterForm, self).__init__(*args, **kwargs)
-        # Personalizar la etiqueta del profesional si es necesario, similar a ConsultaDisponibilidadForm
         self.fields['profesional'].label_from_instance = lambda obj: f"{obj.user_account.get_full_name()} ({obj.especialidad.nombre_especialidad})"
-        # Podríamos añadir más personalizaciones o validaciones clean_() aquí si fueran necesarias,
-        # por ejemplo, para asegurar que fecha_hasta no sea anterior a fecha_desde.
     
     def clean(self):
         cleaned_data = super().clean()
@@ -143,3 +137,45 @@ class CitaFilterForm(forms.Form):
         if fecha_desde and fecha_hasta and fecha_hasta < fecha_desde:
             self.add_error('fecha_hasta', "La fecha 'hasta' no puede ser anterior a la fecha 'desde'.")
         return cleaned_data
+
+class ModificarCitaForm(forms.Form):
+    profesional = forms.ModelChoiceField(
+        # El queryset se ajustará en __init__
+        queryset=ProfesionalSalud.objects.none(), # Queryset vacío por defecto
+        label="Nuevo Profesional",
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        required=True 
+    )
+    fecha_cita = forms.DateField(
+        label="Nueva Fecha para la Cita",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        required=True 
+    )
+
+    def __init__(self, *args, **kwargs):
+        # Extraemos 'cita_actual' de kwargs ANTES de llamar al super().__init__
+        cita_actual = kwargs.pop('cita_actual', None) 
+        super(ModificarCitaForm, self).__init__(*args, **kwargs)
+        
+        if cita_actual:
+            # Filtramos el queryset de profesionales para que solo muestre aquellos
+            # de la misma especialidad que la cita actual.
+            self.fields['profesional'].queryset = ProfesionalSalud.objects.filter(
+                especialidad=cita_actual.profesional.especialidad,
+                user_account__is_active=True
+            ).order_by('user_account__last_name', 'user_account__first_name')
+            
+            # Establecemos el valor inicial del campo profesional al profesional de la cita actual
+            # Esto se hará en la vista al instanciar el form con 'initial', pero es bueno tenerlo como referencia.
+            # self.initial['profesional'] = cita_actual.profesional # Esto es mejor manejarlo con initial en la vista
+
+        # Personalizar cómo se muestra cada profesional en el desplegable
+        self.fields['profesional'].label_from_instance = lambda obj: f"{obj.user_account.get_full_name()} ({obj.especialidad.nombre_especialidad})"
+
+
+    def clean_fecha_cita(self):
+        fecha_seleccionada = self.cleaned_data.get('fecha_cita')
+        hoy = timezone.localdate() 
+        if fecha_seleccionada and fecha_seleccionada < hoy:
+            raise forms.ValidationError("La nueva fecha de la cita no puede ser una fecha pasada.")
+        return fecha_seleccionada

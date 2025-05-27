@@ -40,6 +40,12 @@ urlpatterns = [
          views.seleccionar_paciente_para_cita, 
          name='seleccionar_paciente_para_cita'),
 
-    # NUEVA URL PARA VISUALIZAR CITAS GESTIONADAS (HU-ASE-009) 👇
+    # URL PARA VISUALIZAR CITAS GESTIONADAS (HU-ASE-009)
     path('citas-gestionadas/', views.visualizar_citas_gestionadas, name='visualizar_citas_gestionadas'),
+
+    # URL PARA MODIFICAR UNA CITA (HU-ASE-007) - Esta es la página del formulario inicial de modificación
+    path('cita/<int:cita_id>/modificar/', views.modificar_cita, name='modificar_cita'),
+
+    # NUEVA URL PARA LA PÁGINA DE CONFIRMACIÓN DE MODIFICACIÓN DE CITA (HU-ASE-007) 👇
+    path('cita/<int:cita_id>/modificar/confirmar/', views.confirmar_modificacion_cita, name='confirmar_modificacion_cita'),
 ]

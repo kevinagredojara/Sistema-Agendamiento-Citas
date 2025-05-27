@@ -23,21 +23,20 @@
         .messages li.info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
         .messages li.warning { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
         
-        /* Estilos para el formulario de filtros */
         .filter-form {
             background-color: #e9ecef;
             padding: 15px;
             border-radius: 6px;
             margin-bottom: 20px;
-            display: flex; /* Para alinear campos horizontalmente */
-            flex-wrap: wrap; /* Permitir que los campos pasen a la siguiente línea si no caben */
-            gap: 15px; /* Espacio entre campos del filtro */
-            align-items: flex-end; /* Alinear elementos al final para que el botón quede bien */
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 15px; 
+            align-items: flex-end; 
         }
-        .filter-form p { /* Django forms .as_p genera párrafos */
-            margin: 0; /* Quitar margen por defecto de los párrafos del form */
-            flex-grow: 1; /* Permitir que los campos crezcan */
-            min-width: 200px; /* Ancho mínimo para cada campo de filtro */
+        .filter-form p {
+            margin: 0; 
+            flex-grow: 1; 
+            min-width: 200px; 
         }
         .filter-form label {
             display: block;
@@ -47,18 +46,18 @@
         }
         .filter-form input[type="date"], 
         .filter-form select {
-            width: 100%; /* Hacer que los campos usen el ancho disponible en su 'p' */
+            width: 100%; 
             padding: 8px;
             border: 1px solid #ced4da;
             border-radius: 4px;
-            box-sizing: border-box; /* Importante para que padding no aumente el width total */
+            box-sizing: border-box; 
             font-size: 0.9em;
         }
-        .filter-form .form-buttons { /* Contenedor para los botones del filtro */
+        .filter-form .form-buttons { 
             display: flex;
             gap: 10px;
-            align-items: center; /* Alinear con la base de los campos */
-             margin-top: 25px; /* Espacio si los labels están arriba */
+            align-items: center; 
+             margin-top: 25px; 
         }
         .filter-form button, .filter-form a.button-link {
             padding: 8px 15px;
@@ -69,15 +68,15 @@
             border: none;
         }
         .filter-form button[type="submit"] {
-            background-color: #28a745; /* Verde */
+            background-color: #28a745; 
             color: white;
             border: 1px solid #28a745;
         }
         .filter-form button[type="submit"]:hover {
             background-color: #218838;
         }
-        .filter-form a.button-link { /* Para el botón de limpiar */
-            background-color: #6c757d; /* Gris */
+        .filter-form a.button-link { 
+            background-color: #6c757d; 
             color: white;
             border: 1px solid #6c757d;
         }
@@ -155,9 +154,7 @@
 
         <h1>{{ titulo_pagina|default:"Citas Médicas Gestionadas" }}</h1>
 
-        {# FORMULARIO DE FILTROS AÑADIDO AQUÍ 👇 #}
         <form method="get" action="" class="filter-form"> 
-            {# No es necesario {% csrf_token %} para formularios GET #}
             {{ filter_form.as_p }} 
             <div class="form-buttons">
                 <button type="submit">Filtrar</button>
@@ -192,8 +189,9 @@
                         <td>{{ cita.get_estado_cita_display }}</td>
                         <td>{{ cita.asesor_que_agenda.user_account.get_full_name|default:cita.asesor_que_agenda.user_account.username|default:"N/A" }}</td>
                         <td> 
-                            <a href="#" class="action-button button-modify">Modificar</a>
-                            <a href="#" class="action-button button-cancel">Cancelar</a>
+                            {# CAMBIO EN EL ENLACE DEL BOTÓN "Modificar" 👇 #}
+                            <a href="{% url 'agendamiento:modificar_cita' cita_id=cita.id %}" class="action-button button-modify">Modificar</a>
+                            <a href="#" class="action-button button-cancel">Cancelar</a> {# El de cancelar aún es placeholder #}
                         </td>
                     </tr>
                     {% endfor %}
