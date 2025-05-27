@@ -4,11 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from .decorators import asesor_required, profesional_required, paciente_required
-# LÍNEA DE IMPORTACIÓN DE FORMULARIOS ACTUALIZADA:
+# LÍNEA DE IMPORTACIÓN DE FORMULARIOS ACTUALIZADA (si la tienes así):
 from .forms import (
     UserForm, PacienteForm, UserUpdateForm, 
-    ConsultaDisponibilidadForm, BuscarPacientePorDocumentoForm # Se importa el nuevo y se quita el viejo
+    ConsultaDisponibilidadForm, BuscarPacientePorDocumentoForm
 )
+# ASEGÚRATE DE QUE 'Cita' ESTÉ IMPORTADO. SI NO, AÑÁDELO:
 from .models import Paciente, ProfesionalSalud, PlantillaHorarioMedico, Cita 
 from datetime import datetime, time, timedelta
 from django.core.mail import send_mail
@@ -125,44 +126,57 @@ def consultar_disponibilidad(request):
                     profesional=profesional_seleccionado,
                     dia_semana=dia_semana_seleccionado
                 ).order_by('hora_inicio_bloque')
-                current_tz = timezone.get_current_timezone()
+                current_tz = timezone.get_current_timezone() # America/Bogota
+                
                 inicio_del_dia_seleccionado = timezone.make_aware(datetime.combine(fecha_seleccionada, time.min), current_tz)
                 fin_del_dia_seleccionado = timezone.make_aware(datetime.combine(fecha_seleccionada, time.max), current_tz)
+
                 citas_ocupadas_qs = Cita.objects.filter(
                     profesional=profesional_seleccionado,
                     fecha_hora_inicio_cita__gte=inicio_del_dia_seleccionado,
                     fecha_hora_inicio_cita__lte=fin_del_dia_seleccionado,
                     estado_cita='Programada'
                 )
+                
                 rangos_ocupados = []
                 for cita_ocupada in citas_ocupadas_qs:
                     hora_inicio_local_ocupada = timezone.localtime(cita_ocupada.fecha_hora_inicio_cita, current_tz).time()
                     hora_fin_local_ocupada = timezone.localtime(cita_ocupada.fecha_hora_fin_cita, current_tz).time()
                     rangos_ocupados.append((hora_inicio_local_ocupada, hora_fin_local_ocupada))
+
                 duracion_consulta = profesional_seleccionado.especialidad.duracion_consulta_minutos
+                
                 for plantilla in plantillas:
                     hora_inicio_iteracion_naive = datetime.combine(fecha_seleccionada, plantilla.hora_inicio_bloque)
                     hora_fin_iteracion_bloque_naive = datetime.combine(fecha_seleccionada, plantilla.hora_fin_bloque)
+                    
                     hora_inicio_iteracion = timezone.make_aware(hora_inicio_iteracion_naive, current_tz)
                     hora_fin_iteracion_bloque = timezone.make_aware(hora_fin_iteracion_bloque_naive, current_tz)
+
                     while hora_inicio_iteracion < hora_fin_iteracion_bloque:
                         hora_fin_slot_propuesto = hora_inicio_iteracion + timedelta(minutes=duracion_consulta)
                         if hora_fin_slot_propuesto > hora_fin_iteracion_bloque:
                             break 
+                        
                         slot_esta_ocupado = False
                         slot_inicio_time_local = hora_inicio_iteracion.astimezone(current_tz).time()
                         slot_fin_time_local = hora_fin_slot_propuesto.astimezone(current_tz).time()
+
                         for inicio_ocupado_local, fin_ocupado_local in rangos_ocupados:
                             if (slot_inicio_time_local < fin_ocupado_local and slot_fin_time_local > inicio_ocupado_local):
                                 slot_esta_ocupado = True
                                 break 
+                        
                         if not slot_esta_ocupado:
                             slots_disponibles.append((slot_inicio_time_local, slot_fin_time_local))
+                        
                         hora_inicio_iteracion = hora_fin_slot_propuesto
+                
                 if not slots_disponibles and plantillas.exists():
                     messages.info(request, f"No hay horarios disponibles para {profesional_seleccionado} el {fecha_seleccionada.strftime('%d/%m/%Y')}.")
                 elif not plantillas.exists():
                     messages.warning(request, f"{profesional_seleccionado} no tiene un horario configurado para el día seleccionado ({fecha_seleccionada.strftime('%A, %d/%m/%Y')}).")
+    
     context = {
         'form': form, 'titulo_pagina': 'Consultar Disponibilidad de Citas',
         'slots_disponibles': slots_disponibles,
@@ -171,7 +185,7 @@ def consultar_disponibilidad(request):
     }
     return render(request, 'agendamiento/consultar_disponibilidad_form.html', context)
 
-# VISTA MODIFICADA PARA MANEJAR BÚSQUEDA Y AGENDAMIENTO DE PACIENTE
+
 @login_required
 @asesor_required
 def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_str, hora_inicio_slot_str):
@@ -189,10 +203,9 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
     duracion_consulta = profesional.especialidad.duracion_consulta_minutos
     fecha_hora_fin_cita_aware = fecha_hora_inicio_cita_aware + timedelta(minutes=duracion_consulta)
 
-    paciente_encontrado = None # Para almacenar el paciente si la búsqueda es exitosa
+    paciente_encontrado = None 
 
-    # Lógica para buscar paciente si se envía el número de documento
-    if 'buscar_paciente' in request.GET: # Asumimos que el botón de búsqueda envía este parámetro
+    if 'buscar_paciente' in request.GET: 
         form_buscar_paciente = BuscarPacientePorDocumentoForm(request.GET)
         if form_buscar_paciente.is_valid():
             numero_documento = form_buscar_paciente.cleaned_data['numero_documento']
@@ -201,14 +214,10 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
                 messages.success(request, f"Paciente encontrado: {paciente_encontrado.user_account.get_full_name()}")
             except Paciente.DoesNotExist:
                 messages.error(request, f"No se encontró un paciente activo con el número de documento '{numero_documento}'. Puede registrarlo si es necesario.")
-        # else:
-            # El form_buscar_paciente se pasará al contexto con sus errores
     else:
-        form_buscar_paciente = BuscarPacientePorDocumentoForm() # Formulario vacío para la carga inicial
+        form_buscar_paciente = BuscarPacientePorDocumentoForm() 
 
-    # Lógica para agendar la cita si se envía el paciente_id (POST)
     if request.method == 'POST':
-        # Este POST ahora es para confirmar la cita con un paciente ya identificado
         paciente_id_confirmado = request.POST.get('paciente_id_confirmado')
         if not paciente_id_confirmado:
             messages.error(request, "No se seleccionó un paciente para agendar la cita.")
@@ -216,21 +225,18 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
             try:
                 paciente_seleccionado = Paciente.objects.get(id=paciente_id_confirmado)
 
-                # Doble verificación de disponibilidad
                 if Cita.objects.filter(profesional=profesional, fecha_hora_inicio_cita=fecha_hora_inicio_cita_aware, estado_cita='Programada').exists():
                     messages.error(request, f"El horario de {hora_inicio_slot_str} para {profesional} el {fecha_obj.strftime('%d/%m/%Y')} ya no está disponible. Intente con otro.")
-                    # No redirigimos inmediatamente, permitimos que el formulario de búsqueda se muestre de nuevo
                 else:
                     Cita.objects.create(
                         paciente=paciente_seleccionado,
                         profesional=profesional,
-                        asesor_que_agenda=request.user.asesor_perfil,
+                        asesor_que_agenda=request.user.asesor_perfil, # ASUMIENDO QUE EL ASESOR TIENE 'asesor_perfil'
                         fecha_hora_inicio_cita=fecha_hora_inicio_cita_aware,
                         fecha_hora_fin_cita=fecha_hora_fin_cita_aware,
                         estado_cita='Programada'
                     )
                     if paciente_seleccionado.user_account.email:
-                        # ... (código de envío de email como estaba) ...
                         asunto = f"Confirmación de Cita Médica - {profesional.especialidad.nombre_especialidad}"
                         mensaje_email = (
                             f"Estimado(a) {paciente_seleccionado.user_account.get_full_name()},\n\n"
@@ -251,7 +257,7 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
                     return redirect('agendamiento:dashboard_asesor')
             except Paciente.DoesNotExist:
                 messages.error(request, "El paciente seleccionado para agendar la cita no es válido.")
-            except Exception as e: # Otros errores al crear la cita
+            except Exception as e: 
                 messages.error(request, f"Error al crear la cita: {e}")
 
     context = {
@@ -260,11 +266,29 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
         'hora_inicio_slot_obj': hora_obj, 
         'fecha_hora_fin_cita': fecha_hora_fin_cita_aware,
         'titulo_pagina': 'Agendar Cita para Paciente',
-        'form_buscar_paciente': form_buscar_paciente, # Formulario para buscar
-        'paciente_encontrado': paciente_encontrado, # El paciente encontrado (o None)
-        # Para pasar los parámetros originales de la URL al formulario de confirmación POST
+        'form_buscar_paciente': form_buscar_paciente, 
+        'paciente_encontrado': paciente_encontrado, 
         'profesional_id': profesional_id,
         'fecha_seleccionada_str': fecha_seleccionada_str,
         'hora_inicio_slot_str': hora_inicio_slot_str,
     }
     return render(request, 'agendamiento/seleccionar_paciente_para_cita.html', context)
+
+# NUEVA VISTA PARA HU-ASE-009 👇
+@login_required
+@asesor_required
+def visualizar_citas_gestionadas(request):
+    # Por ahora, listamos todas las citas. Más adelante podríamos filtrar por las que el asesor gestiona.
+    # O considerar si un asesor siempre puede ver todas.
+    # Para este MVP inicial, mostrar todas las citas 'Programada' o 'Realizada' podría ser un buen comienzo.
+    # O simplemente todas para que pueda ver el historial completo y luego filtrar.
+    
+    # Ordenamos por fecha de inicio descendente (más recientes primero)
+    lista_citas = Cita.objects.all().order_by('-fecha_hora_inicio_cita') 
+    
+    context = {
+        'citas': lista_citas,
+        'titulo_pagina': 'Citas Médicas Gestionadas'
+    }
+    # Nombre de la plantilla que crearemos en el siguiente paso:
+    return render(request, 'agendamiento/visualizar_citas_gestionadas.html', context)

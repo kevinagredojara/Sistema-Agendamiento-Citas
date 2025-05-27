@@ -15,12 +15,12 @@ urlpatterns = [
              template_name='agendamiento/password_change_form.html',
              success_url=reverse_lazy('agendamiento:password_change_done')
          ),
-         name='password_change'), # <-- Coma aquí
+         name='password_change'),
     path('password_change/done/',
          auth_views.PasswordChangeDoneView.as_view(
              template_name='agendamiento/password_change_done.html'
          ),
-         name='password_change_done'), # <-- Coma aquí
+         name='password_change_done'),
 
     # URLs de Dashboards
     path('dashboard/asesor/', views.dashboard_asesor, name='dashboard_asesor'),
@@ -33,10 +33,13 @@ urlpatterns = [
     path('paciente/<int:paciente_id>/actualizar/', views.actualizar_paciente, name='actualizar_paciente'),
 
     # URL PARA CONSULTAR DISPONIBILIDAD
-    path('consultar-disponibilidad/', views.consultar_disponibilidad, name='consultar_disponibilidad'), # <-- Coma aquí
+    path('consultar-disponibilidad/', views.consultar_disponibilidad, name='consultar_disponibilidad'),
 
-    # URL PARA LA PÁGINA DE SELECCIÓN DE PACIENTE PARA UNA CITA (Esta fue la última que añadimos en el paso anterior)
+    # URL PARA LA PÁGINA DE SELECCIÓN DE PACIENTE PARA UNA CITA
     path('agendar-cita/seleccionar-paciente/<int:profesional_id>/<str:fecha_seleccionada_str>/<str:hora_inicio_slot_str>/', 
          views.seleccionar_paciente_para_cita, 
-         name='seleccionar_paciente_para_cita'), # <-- No necesita coma si es la última, pero no daña si la tiene
-] # <--- ASEGÚRATE DE QUE ESTE CORCHETE DE CIERRE ESTÉ PRESENTE Y CORRECTAMENTE COLOCADO
+         name='seleccionar_paciente_para_cita'),
+
+    # NUEVA URL PARA VISUALIZAR CITAS GESTIONADAS (HU-ASE-009) 👇
+    path('citas-gestionadas/', views.visualizar_citas_gestionadas, name='visualizar_citas_gestionadas'),
+]
