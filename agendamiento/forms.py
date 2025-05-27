@@ -1,7 +1,8 @@
 # agendamiento/forms.py
 from django import forms
 from django.contrib.auth.models import User
-from .models import Paciente, ProfesionalSalud, Especialidad
+# Asegúrate de que ProfesionalSalud y Cita estén importados si no lo están ya
+from .models import Paciente, ProfesionalSalud, Especialidad, Cita 
 from datetime import date
 from django.utils import timezone
 
@@ -71,16 +72,18 @@ class ConsultaDisponibilidadForm(forms.Form):
         queryset=ProfesionalSalud.objects.filter(user_account__is_active=True).order_by('user_account__last_name', 'user_account__first_name'),
         label="Profesional de la Salud",
         empty_label="Seleccione un profesional...",
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        required=True # Lo mantenemos requerido para la consulta de disponibilidad
     )
     fecha = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        label="Fecha para la Consulta"
+        label="Fecha para la Consulta",
+        required=True # Lo mantenemos requerido para la consulta de disponibilidad
     )
 
     def __init__(self, *args, **kwargs):
         super(ConsultaDisponibilidadForm, self).__init__(*args, **kwargs)
-        self.fields['profesional'].label_from_instance = lambda obj: f"{obj.user_account.last_name}, {obj.user_account.first_name} ({obj.especialidad.nombre_especialidad})"
+        self.fields['profesional'].label_from_instance = lambda obj: f"{obj.user_account.get_full_name()} ({obj.especialidad.nombre_especialidad})"
 
     def clean_fecha(self):
         fecha_seleccionada = self.cleaned_data.get('fecha')
@@ -89,24 +92,54 @@ class ConsultaDisponibilidadForm(forms.Form):
             raise forms.ValidationError("No se puede seleccionar una fecha pasada. Por favor, elija una fecha actual o futura.")
         return fecha_seleccionada
 
-# FORMULARIO PARA BUSCAR PACIENTE POR DOCUMENTO
 class BuscarPacientePorDocumentoForm(forms.Form):
     numero_documento = forms.CharField(
         label="Número de Documento del Paciente",
-        max_length=20, # Debe coincidir con el max_length del modelo Paciente
-        required=True, # Hacemos que sea requerido para la búsqueda
+        max_length=20, 
+        required=True, 
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese el documento a buscar'})
     )
 
-# ELIMINAMOS O COMENTAMOS SelectPacienteForm ya que no lo usaremos en este flujo por ahora
-# class SelectPacienteForm(forms.Form):
-#     paciente = forms.ModelChoiceField(
-#         queryset=Paciente.objects.filter(user_account__is_active=True).order_by('user_account__last_name', 'user_account__first_name'),
-#         label="Seleccionar Paciente",
-#         empty_label="Seleccione un paciente...",
-#         widget=forms.Select(attrs={'class': 'form-control'})
-#     )
-#
-#     def __init__(self, *args, **kwargs):
-#         super(SelectPacienteForm, self).__init__(*args, **kwargs)
-#         self.fields['paciente'].label_from_instance = lambda obj: f"{obj.user_account.last_name}, {obj.user_account.first_name} (Doc: {obj.numero_documento})"
+# NUEVO FORMULARIO PARA FILTROS DE CITAS 👇
+class CitaFilterForm(forms.Form):
+    fecha_desde = forms.DateField(
+        label='Fecha Desde',
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    fecha_hasta = forms.DateField(
+        label='Fecha Hasta',
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    profesional = forms.ModelChoiceField(
+        queryset=ProfesionalSalud.objects.filter(user_account__is_active=True).order_by('user_account__last_name', 'user_account__first_name'),
+        required=False,
+        label='Profesional',
+        empty_label="Todos los profesionales", # Para permitir no filtrar por profesional
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    # Construimos las opciones para el estado, añadiendo una opción para "Todos"
+    ESTADOS_FILTRO_CHOICES = [('', 'Todos los estados')] + Cita.ESTADOS_CITA
+    estado_cita = forms.ChoiceField(
+        choices=ESTADOS_FILTRO_CHOICES,
+        required=False,
+        label='Estado de la Cita',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(CitaFilterForm, self).__init__(*args, **kwargs)
+        # Personalizar la etiqueta del profesional si es necesario, similar a ConsultaDisponibilidadForm
+        self.fields['profesional'].label_from_instance = lambda obj: f"{obj.user_account.get_full_name()} ({obj.especialidad.nombre_especialidad})"
+        # Podríamos añadir más personalizaciones o validaciones clean_() aquí si fueran necesarias,
+        # por ejemplo, para asegurar que fecha_hasta no sea anterior a fecha_desde.
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha_desde = cleaned_data.get("fecha_desde")
+        fecha_hasta = cleaned_data.get("fecha_hasta")
+
+        if fecha_desde and fecha_hasta and fecha_hasta < fecha_desde:
+            self.add_error('fecha_hasta', "La fecha 'hasta' no puede ser anterior a la fecha 'desde'.")
+        return cleaned_data

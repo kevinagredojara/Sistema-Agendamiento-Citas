@@ -8,8 +8,12 @@
         body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
         header { background-color: #0056b3; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
         header .header-title { font-size: 1.2em; font-weight: bold; }
-        header a, header button { color: white; text-decoration: none; background-color: #007bff; padding: 5px 10px; border-radius: 4px; font-size: 0.9em; margin-left: 10px; border: none; cursor: pointer;}
-        header a:hover, header button:hover { background-color: #0056b3; }
+        header a, header button.header-btn {
+            color: white; text-decoration: none; background-color: #007bff; 
+            padding: 5px 10px; border-radius: 4px; font-size: 0.9em; 
+            margin-left: 10px; border: none; cursor: pointer;
+        }
+        header a:hover, header button.header-btn:hover { background-color: #0056b3; }
         .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 95%; margin: 20px auto; }
         h1 { color: #0056b3; text-align: center; margin-top: 0; margin-bottom: 20px;}
         .messages { list-style-type: none; padding: 0; margin: 0 0 20px 0; text-align: center; }
@@ -18,17 +22,89 @@
         .messages li.error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
         .messages li.info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
         .messages li.warning { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
+        
+        /* Estilos para el formulario de filtros */
+        .filter-form {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex; /* Para alinear campos horizontalmente */
+            flex-wrap: wrap; /* Permitir que los campos pasen a la siguiente línea si no caben */
+            gap: 15px; /* Espacio entre campos del filtro */
+            align-items: flex-end; /* Alinear elementos al final para que el botón quede bien */
+        }
+        .filter-form p { /* Django forms .as_p genera párrafos */
+            margin: 0; /* Quitar margen por defecto de los párrafos del form */
+            flex-grow: 1; /* Permitir que los campos crezcan */
+            min-width: 200px; /* Ancho mínimo para cada campo de filtro */
+        }
+        .filter-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .filter-form input[type="date"], 
+        .filter-form select {
+            width: 100%; /* Hacer que los campos usen el ancho disponible en su 'p' */
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box; /* Importante para que padding no aumente el width total */
+            font-size: 0.9em;
+        }
+        .filter-form .form-buttons { /* Contenedor para los botones del filtro */
+            display: flex;
+            gap: 10px;
+            align-items: center; /* Alinear con la base de los campos */
+             margin-top: 25px; /* Espacio si los labels están arriba */
+        }
+        .filter-form button, .filter-form a.button-link {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+        }
+        .filter-form button[type="submit"] {
+            background-color: #28a745; /* Verde */
+            color: white;
+            border: 1px solid #28a745;
+        }
+        .filter-form button[type="submit"]:hover {
+            background-color: #218838;
+        }
+        .filter-form a.button-link { /* Para el botón de limpiar */
+            background-color: #6c757d; /* Gris */
+            color: white;
+            border: 1px solid #6c757d;
+        }
+        .filter-form a.button-link:hover {
+            background-color: #5a6268;
+        }
+
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 0.9em; vertical-align: top;}
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: center; 
+            font-size: 0.9em; 
+            vertical-align: middle; 
+        }
         th { background-color: #007bff; color: white; }
         tr:nth-child(even) { background-color: #f2f2f2; }
         .no-citas { text-align: center; color: #777; margin-top: 30px; font-size: 1.1em; }
-        .button-link {
+        
+        .action-button {
             display: inline-block;
-            padding: 6px 12px;
-            font-size: 14px;
+            padding: 5px 10px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            font-size: 0.85em;
             font-weight: 400;
-            line-height: 1.42857143;
+            line-height: 1.4;
             text-align: center;
             white-space: nowrap;
             vertical-align: middle;
@@ -37,14 +113,20 @@
             border-radius: 4px;
             text-decoration: none;
         }
+        .button-modify { color: #fff; background-color: #17a2b8; border-color: #17a2b8; }
+        .button-modify:hover { background-color: #138496; border-color: #117a8b; }
+        .button-cancel { color: #fff; background-color: #dc3545; border-color: #dc3545; }
+        .button-cancel:hover { background-color: #c82333; border-color: #bd2130; }
+
         .button-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
         .button-primary:hover { background-color: #0056b3; border-color: #0056b3;}
+        
         .header-user-info { display: flex; align-items: center; }
         .header-user-info strong { margin-right: 15px; }
         .header-user-info .button-change-password { background-color: #ffc107; color: #212529; }
         .header-user-info .button-change-password:hover { background-color: #e0a800; }
-        .header-user-info .button-logout { background-color: #dc3545; }
-        .header-user-info .button-logout:hover { background-color: #c82333; }
+        .header-user-info form button.header-btn { background-color: #dc3545; }
+        .header-user-info form button.header-btn:hover { background-color: #c82333; }
     </style>
 </head>
 <body>
@@ -53,10 +135,10 @@
         <div class="header-user-info">
             {% if user.is_authenticated %}
                 <strong>Usuario: {{ user.username }}</strong>
-                <a href="{% url 'agendamiento:password_change' %}" class="button-change-password">Cambiar Contraseña</a>
+                <a href="{% url 'agendamiento:password_change' %}" class="button-change-password header-btn">Cambiar Contraseña</a>
                 <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline; margin-left: 10px;">
                     {% csrf_token %}
-                    <button type="submit" class="button-logout">Cerrar Sesión</button>
+                    <button type="submit" class="header-btn">Cerrar Sesión</button>
                 </form>
             {% endif %}
         </div>
@@ -73,7 +155,15 @@
 
         <h1>{{ titulo_pagina|default:"Citas Médicas Gestionadas" }}</h1>
 
-        {# Aquí irán los filtros en el futuro #}
+        {# FORMULARIO DE FILTROS AÑADIDO AQUÍ 👇 #}
+        <form method="get" action="" class="filter-form"> 
+            {# No es necesario {% csrf_token %} para formularios GET #}
+            {{ filter_form.as_p }} 
+            <div class="form-buttons">
+                <button type="submit">Filtrar</button>
+                <a href="{% url 'agendamiento:visualizar_citas_gestionadas' %}" class="button-link">Limpiar</a>
+            </div>
+        </form>
 
         {% if citas %}
             <table>
@@ -87,6 +177,7 @@
                         <th>Fecha y Hora Fin</th>
                         <th>Estado</th>
                         <th>Agendó Asesor</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -99,14 +190,17 @@
                         <td>{{ cita.fecha_hora_inicio_cita|date:"d/m/Y H:i" }}</td> 
                         <td>{{ cita.fecha_hora_fin_cita|date:"d/m/Y H:i" }}</td>   
                         <td>{{ cita.get_estado_cita_display }}</td>
-                        {# CAMBIO PARA MOSTRAR NOMBRE COMPLETO DEL ASESOR 👇 #}
                         <td>{{ cita.asesor_que_agenda.user_account.get_full_name|default:cita.asesor_que_agenda.user_account.username|default:"N/A" }}</td>
+                        <td> 
+                            <a href="#" class="action-button button-modify">Modificar</a>
+                            <a href="#" class="action-button button-cancel">Cancelar</a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         {% else %}
-            <p class="no-citas">No hay citas para mostrar.</p>
+            <p class="no-citas">No hay citas para mostrar{% if request.GET %} con los filtros aplicados{% endif %}.</p>
         {% endif %}
     </div>
 </body>

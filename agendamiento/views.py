@@ -4,17 +4,18 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from .decorators import asesor_required, profesional_required, paciente_required
-# LÍNEA DE IMPORTACIÓN DE FORMULARIOS ACTUALIZADA (si la tienes así):
+# ASEGÚRATE DE IMPORTAR CitaFilterForm 👇
 from .forms import (
     UserForm, PacienteForm, UserUpdateForm, 
-    ConsultaDisponibilidadForm, BuscarPacientePorDocumentoForm
+    ConsultaDisponibilidadForm, BuscarPacientePorDocumentoForm, CitaFilterForm # Añadido CitaFilterForm
 )
-# ASEGÚRATE DE QUE 'Cita' ESTÉ IMPORTADO. SI NO, AÑÁDELO:
+# Asegúrate de que Cita esté importado
 from .models import Paciente, ProfesionalSalud, PlantillaHorarioMedico, Cita 
 from datetime import datetime, time, timedelta
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Q # Para filtros OR si fueran necesarios en el futuro
 
 @login_required
 def pagina_inicio(request):
@@ -115,18 +116,20 @@ def consultar_disponibilidad(request):
     slots_disponibles = []
     profesional_seleccionado = None
     fecha_seleccionada = None
-    if request.GET and 'profesional' in request.GET and 'fecha' in request.GET:
+    if request.GET and 'profesional' in request.GET and 'fecha' in request.GET: # Aseguramos que los campos esperados estén
         form = ConsultaDisponibilidadForm(request.GET)
         if form.is_valid():
             profesional_seleccionado = form.cleaned_data['profesional']
             fecha_seleccionada = form.cleaned_data['fecha']
+            # El resto de la lógica de disponibilidad permanece igual
+            # ... (código de disponibilidad existente) ...
             if profesional_seleccionado and fecha_seleccionada:
                 dia_semana_seleccionado = fecha_seleccionada.weekday()
                 plantillas = PlantillaHorarioMedico.objects.filter(
                     profesional=profesional_seleccionado,
                     dia_semana=dia_semana_seleccionado
                 ).order_by('hora_inicio_bloque')
-                current_tz = timezone.get_current_timezone() # America/Bogota
+                current_tz = timezone.get_current_timezone() 
                 
                 inicio_del_dia_seleccionado = timezone.make_aware(datetime.combine(fecha_seleccionada, time.min), current_tz)
                 fin_del_dia_seleccionado = timezone.make_aware(datetime.combine(fecha_seleccionada, time.max), current_tz)
@@ -231,7 +234,7 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
                     Cita.objects.create(
                         paciente=paciente_seleccionado,
                         profesional=profesional,
-                        asesor_que_agenda=request.user.asesor_perfil, # ASUMIENDO QUE EL ASESOR TIENE 'asesor_perfil'
+                        asesor_que_agenda=request.user.asesor_perfil, 
                         fecha_hora_inicio_cita=fecha_hora_inicio_cita_aware,
                         fecha_hora_fin_cita=fecha_hora_fin_cita_aware,
                         estado_cita='Programada'
@@ -274,21 +277,51 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
     }
     return render(request, 'agendamiento/seleccionar_paciente_para_cita.html', context)
 
-# NUEVA VISTA PARA HU-ASE-009 👇
+# VISTA MODIFICADA PARA HU-ASE-009 CON FILTROS 👇
 @login_required
 @asesor_required
 def visualizar_citas_gestionadas(request):
-    # Por ahora, listamos todas las citas. Más adelante podríamos filtrar por las que el asesor gestiona.
-    # O considerar si un asesor siempre puede ver todas.
-    # Para este MVP inicial, mostrar todas las citas 'Programada' o 'Realizada' podría ser un buen comienzo.
-    # O simplemente todas para que pueda ver el historial completo y luego filtrar.
-    
-    # Ordenamos por fecha de inicio descendente (más recientes primero)
-    lista_citas = Cita.objects.all().order_by('-fecha_hora_inicio_cita') 
+    lista_citas = Cita.objects.select_related( # Optimizacion para reducir queries
+        'paciente__user_account', 
+        'profesional__user_account', 
+        'profesional__especialidad',
+        'asesor_que_agenda__user_account'
+    ).all() # Por defecto, obtenemos todas las citas
+
+    # Instanciamos el formulario de filtros. Si hay datos GET, se rellenará con ellos.
+    filter_form = CitaFilterForm(request.GET or None)
+
+    if filter_form.is_valid():
+        fecha_desde = filter_form.cleaned_data.get('fecha_desde')
+        fecha_hasta = filter_form.cleaned_data.get('fecha_hasta')
+        profesional_filtrado = filter_form.cleaned_data.get('profesional')
+        estado_filtrado = filter_form.cleaned_data.get('estado_cita')
+
+        if fecha_desde:
+            # Para DateTimeField, necesitamos comparar con un datetime.
+            # Creamos un datetime para el inicio del día.
+            fecha_desde_dt = timezone.make_aware(datetime.combine(fecha_desde, time.min), timezone.get_current_timezone())
+            lista_citas = lista_citas.filter(fecha_hora_inicio_cita__gte=fecha_desde_dt)
+        
+        if fecha_hasta:
+            # Creamos un datetime para el final del día.
+            fecha_hasta_dt = timezone.make_aware(datetime.combine(fecha_hasta, time.max), timezone.get_current_timezone())
+            lista_citas = lista_citas.filter(fecha_hora_inicio_cita__lte=fecha_hasta_dt)
+            # Alternativamente, si quieres incluir citas que *terminan* antes de fin de fecha_hasta:
+            # lista_citas = lista_citas.filter(fecha_hora_fin_cita__lte=fecha_hasta_dt)
+
+        if profesional_filtrado:
+            lista_citas = lista_citas.filter(profesional=profesional_filtrado)
+        
+        if estado_filtrado: # El valor '' (Todos los estados) no aplicará este filtro
+            lista_citas = lista_citas.filter(estado_cita=estado_filtrado)
+
+    # Aplicamos el ordenamiento después de los filtros
+    lista_citas = lista_citas.order_by('-fecha_hora_inicio_cita') 
     
     context = {
         'citas': lista_citas,
-        'titulo_pagina': 'Citas Médicas Gestionadas'
+        'titulo_pagina': 'Citas Médicas Gestionadas',
+        'filter_form': filter_form # Pasamos el formulario al contexto
     }
-    # Nombre de la plantilla que crearemos en el siguiente paso:
     return render(request, 'agendamiento/visualizar_citas_gestionadas.html', context)
