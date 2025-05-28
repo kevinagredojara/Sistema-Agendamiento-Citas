@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo_pagina|default:"Actualización Exitosa" }} - Sistema de Citas</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
+        header { background-color: #0056b3; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        header a.button-header, header button.header-btn {
+            color: white; text-decoration: none; background-color: #007bff; 
+            padding: 5px 10px; border-radius: 4px; font-size: 0.9em; 
+            margin-left: 10px; border: none; cursor: pointer;
+        }
+        header a.button-header:hover, header button.header-btn:hover { background-color: #0056b3; }
+        
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 600px; margin: 40px auto; text-align: center; }
+        h1 { color: #28a745; /* Verde para éxito */ margin-top: 0; margin-bottom: 20px;}
+        
+        .success-message p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .action-button {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            margin: 0 10px;
+            background-color: #007bff;
+            color: white;
+            border: 1px solid #007bff;
+        }
+        .action-button:hover {
+            background-color: #0056b3;
+        }
+        
+        .button-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
+        .button-primary:hover { background-color: #0056b3; border-color: #0056b3;}
+        .header-user-info { display: flex; align-items: center; }
+        .header-user-info strong { margin-right: 15px; }
+        .header-user-info .button-change-password { background-color: #ffc107; color: #212529; }
+        .header-user-info .button-change-password:hover { background-color: #e0a800; }
+        .header-user-info form button.header-btn { background-color: #dc3545; }
+        .header-user-info form button.header-btn:hover { background-color: #c82333; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="{% url 'agendamiento:dashboard_paciente' %}" class="button-header button-primary">← Volver a Mi Portal</a>
+        <div class="header-user-info">
+            {% if user.is_authenticated %}
+                <strong>Usuario: {{ user.username }}</strong>
+                <a href="{% url 'agendamiento:password_change' %}" class="button-change-password header-btn">Cambiar Contraseña</a>
+                <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline; margin-left: 10px;">
+                    {% csrf_token %}
+                    <button type="submit" class="header-btn">Cerrar Sesión</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>{{ titulo_pagina|default:"¡Datos Actualizados!" }}</h1>
+
+        {# Los mensajes flash de Django no se usarán aquí, ya que esta es la página de "éxito" en sí misma #}
+        {# Si hubiera un error para llegar aquí, se mostraría en la página anterior con el formulario #}
+
+        <div class="success-message">
+            <p>Sus datos de contacto han sido actualizados exitosamente.</p>
+            <p>
+                <a href="{% url 'agendamiento:dashboard_paciente' %}" class="action-button">Ir a Mi Portal</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

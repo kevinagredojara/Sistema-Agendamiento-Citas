@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Portal de Paciente - Sistema de Citas</title>
     <style>
+        /* ... (tus estilos CSS como estaban) ... */
         body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
         header { background-color: #0056b3; color: white; padding: 10px 20px; text-align: right; }
         header strong { margin-right: 15px; }
@@ -18,7 +19,6 @@
         ul li a { text-decoration: none; color: #007bff; font-size: 1.1em; }
         ul li a:hover { text-decoration: underline; }
         .user-info { text-align: right; margin-bottom: 20px; font-size: 0.9em; }
-        /* Estilos específicos para botones del header si es necesario */
         header .button-logout { background-color: #dc3545; }
         header .button-logout:hover { background-color: #c82333; }
         header .button-change-password { background-color: #ffc107; color: #212529; }
@@ -44,16 +44,15 @@
 
         <h2>Mis Citas:</h2>
         <ul>
-            <li><a href="#">Ver Mis Próximas Citas</a></li>
-            <li><a href="#">Ver Historial de Citas</a></li>
+            <li><a href="{% url 'agendamiento:ver_proximas_citas_paciente' %}">Ver Mis Próximas Citas</a></li>
+            <li><a href="{% url 'agendamiento:ver_historial_citas_paciente' %}">Ver Historial de Citas</a></li>
         </ul>
 
         <h2>Mi Perfil:</h2>
         <ul>
-            <li><a href="#">Actualizar Mis Datos de Contacto</a></li>
+            {# CAMBIO EN EL ENLACE "Actualizar Mis Datos de Contacto" 👇 #}
+            <li><a href="{% url 'agendamiento:actualizar_datos_paciente' %}">Actualizar Mis Datos de Contacto</a></li> 
         </ul>
-
-        {# Aquí se podrían añadir más secciones o información relevante para el paciente #}
     </div>
 </body>
 </html>

@@ -2,9 +2,10 @@
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 
-from . import views  # Para las vistas generales que quedaron en views.py
-from . import views_asesor  # Para las vistas específicas del asesor
-from . import views_profesional # Para las vistas del profesional
+from . import views
+from . import views_asesor
+from . import views_profesional
+from . import views_paciente
 
 app_name = 'agendamiento'
 
@@ -48,10 +49,14 @@ urlpatterns = [
     
     path('profesional/agenda/', views_profesional.ver_agenda_profesional, name='ver_agenda_profesional'),
     path('profesional/cita/<int:cita_id>/detalles-paciente/', views_profesional.ver_detalles_paciente_cita, name='ver_detalles_paciente_cita'),
-    
-    # URL que procesa el POST del registro de asistencia (ya existe y está bien)
     path('profesional/cita/<int:cita_id>/registrar-asistencia/', views_profesional.registrar_asistencia_cita, name='registrar_asistencia_cita'),
-
-    # NUEVA URL PARA LA PÁGINA DE CONFIRMACIÓN DE REGISTRO DE ASISTENCIA (HU-MED-004) 👇
     path('profesional/cita/<int:cita_id>/asistencia/confirmar/', views_profesional.confirmar_asistencia_cita, name='confirmar_asistencia_cita'),
+
+    # URLs del Paciente
+    path('paciente/mis-citas/historial/', views_paciente.ver_historial_citas, name='ver_historial_citas_paciente'),
+    path('paciente/mis-citas/proximas/', views_paciente.ver_proximas_citas, name='ver_proximas_citas_paciente'),
+    
+    # NUEVAS URLs PARA "ACTUALIZAR MIS DATOS DE CONTACTO" DEL PACIENTE (HU-PAC-002 - Nuevo Enfoque) 👇
+    path('paciente/perfil/actualizar-datos/', views_paciente.actualizar_datos_paciente, name='actualizar_datos_paciente'),
+    path('paciente/perfil/actualizacion-exitosa/', views_paciente.actualizacion_datos_exitosa, name='actualizacion_datos_exitosa_paciente'),
 ]

@@ -140,8 +140,7 @@ class CitaFilterForm(forms.Form):
 
 class ModificarCitaForm(forms.Form):
     profesional = forms.ModelChoiceField(
-        # El queryset se ajustará en __init__
-        queryset=ProfesionalSalud.objects.none(), # Queryset vacío por defecto
+        queryset=ProfesionalSalud.objects.none(), 
         label="Nuevo Profesional",
         widget=forms.Select(attrs={'class': 'form-control'}),
         required=True 
@@ -153,25 +152,15 @@ class ModificarCitaForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
-        # Extraemos 'cita_actual' de kwargs ANTES de llamar al super().__init__
         cita_actual = kwargs.pop('cita_actual', None) 
         super(ModificarCitaForm, self).__init__(*args, **kwargs)
         
         if cita_actual:
-            # Filtramos el queryset de profesionales para que solo muestre aquellos
-            # de la misma especialidad que la cita actual.
             self.fields['profesional'].queryset = ProfesionalSalud.objects.filter(
                 especialidad=cita_actual.profesional.especialidad,
                 user_account__is_active=True
             ).order_by('user_account__last_name', 'user_account__first_name')
-            
-            # Establecemos el valor inicial del campo profesional al profesional de la cita actual
-            # Esto se hará en la vista al instanciar el form con 'initial', pero es bueno tenerlo como referencia.
-            # self.initial['profesional'] = cita_actual.profesional # Esto es mejor manejarlo con initial en la vista
-
-        # Personalizar cómo se muestra cada profesional en el desplegable
         self.fields['profesional'].label_from_instance = lambda obj: f"{obj.user_account.get_full_name()} ({obj.especialidad.nombre_especialidad})"
-
 
     def clean_fecha_cita(self):
         fecha_seleccionada = self.cleaned_data.get('fecha_cita')
@@ -179,3 +168,19 @@ class ModificarCitaForm(forms.Form):
         if fecha_seleccionada and fecha_seleccionada < hoy:
             raise forms.ValidationError("La nueva fecha de la cita no puede ser una fecha pasada.")
         return fecha_seleccionada
+
+# FORMULARIO PARA ACTUALIZAR DATOS DE CONTACTO DEL PACIENTE (HU-PAC-002) 👇
+class PacienteDatosContactoForm(forms.Form):
+    email = forms.EmailField(
+        label="Correo Electrónico", 
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'form-control'})
+    )
+    telefono_contacto = forms.CharField(
+        label="Teléfono de Contacto", 
+        max_length=20, 
+        required=True, 
+        widget=forms.TextInput(attrs={'class': 'form-control', 'pattern': '[0-9]+', 'title': 'Ingrese solo números para el teléfono.'}) # Añadida validación básica HTML5
+    )
+
+    # Podríamos añadir validaciones personalizadas clean_email o clean_telefono_contacto si es necesario

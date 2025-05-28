@@ -133,4 +133,4 @@ LOGIN_REDIRECT_URL = '/'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
