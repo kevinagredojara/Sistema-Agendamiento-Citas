@@ -28,7 +28,8 @@
 <body>
     <header>
         {% if user.is_authenticated %}
-            <strong>Usuario: {{ user.username }}</strong>
+            {# CAMBIO AQUÍ 👇 #}
+            <strong>Usuario: {{ user.get_full_name|default:user.username }}</strong>
             <a href="{% url 'agendamiento:password_change' %}" class="button-change-password">Cambiar Contraseña</a>
             <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline;">
                 {% csrf_token %}
@@ -39,6 +40,9 @@
 
     <div class="container">
         <h1>Mi Portal de Paciente</h1>
+        {# La variable nombre_usuario aquí viene del contexto de la vista del dashboard, #}
+        {# esta podría ya estar mostrando el nombre completo si la vista la prepara así. #}
+        {# El cambio que hicimos es para el user.username del header general. #}
         <p>Bienvenido, {{ nombre_usuario }}.</p>
         <p>Desde aquí podrá consultar sus citas y actualizar su información de contacto.</p>
 
@@ -50,7 +54,6 @@
 
         <h2>Mi Perfil:</h2>
         <ul>
-            {# CAMBIO EN EL ENLACE "Actualizar Mis Datos de Contacto" 👇 #}
             <li><a href="{% url 'agendamiento:actualizar_datos_paciente' %}">Actualizar Mis Datos de Contacto</a></li> 
         </ul>
     </div>

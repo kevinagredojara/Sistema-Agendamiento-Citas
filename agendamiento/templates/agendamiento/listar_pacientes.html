@@ -6,10 +6,44 @@
     <title>{{ titulo_pagina|default:"Pacientes" }} - Sistema de Citas</title>
     <style>
         body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
-        header { background-color: #0056b3; color: white; padding: 10px 20px; text-align: right; }
-        header strong { margin-right: 15px; }
-        header a, header button { color: white; text-decoration: none; background-color: #007bff; padding: 5px 10px; border-radius: 4px; font-size: 0.9em; margin-left: 10px; border: none; cursor: pointer;}
-        header a:hover, header button:hover { background-color: #0056b3; }
+        /* Aplicar estilos directamente al header con la clase específica */
+        header.user-info-header { 
+            background-color: #0056b3; 
+            color: white; 
+            padding: 10px 20px; 
+            text-align: right; 
+        }
+        header.user-info-header strong { margin-right: 15px; }
+        header.user-info-header a, header.user-info-header button { 
+            color: white;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin-left: 10px;
+            border: none; 
+            cursor: pointer; 
+        }
+        header.user-info-header a.button-change-password, 
+        header.user-info-header button.button-change-password { background-color: #ffc107; color: #212529; }
+        header.user-info-header a.button-change-password:hover, 
+        header.user-info-header button.button-change-password:hover { background-color: #e0a800; }
+        
+        header.user-info-header a.button-logout, 
+        header.user-info-header button.button-logout { background-color: #dc3545; }
+        header.user-info-header a.button-logout:hover, 
+        header.user-info-header button.button-logout:hover { background-color: #c82333; }
+        
+        /* Estilo base para botones con fondo azul si no tienen clase específica en este header */
+        header.user-info-header a:not(.button-change-password):not(.button-logout),
+        header.user-info-header button:not(.button-change-password):not(.button-logout) {
+             background-color: #007bff; /* Color por defecto si es un enlace genérico */
+        }
+        header.user-info-header a:not(.button-change-password):not(.button-logout):hover,
+        header.user-info-header button:not(.button-change-password):not(.button-logout):hover {
+             background-color: #0056b3;
+        }
+        
         .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 900px; margin: 20px auto; }
         h1 { color: #0056b3; text-align: center; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -28,7 +62,7 @@
         .actions .edit-btn { background-color: #ffc107; color: #212529; border-color: #ffc107;}
         .actions .edit-btn:hover { background-color: #e0a800; }
         .no-pacientes { text-align: center; font-style: italic; color: #777; padding: 20px; }
-        .user-info-header { text-align: right; padding: 10px 20px; background-color: #004085; color: white;}
+        /* .user-info-header { text-align: right; padding: 10px 20px; background-color: #004085; color: white;} */ /* Comentado, ya está en header.user-info-header */
         .back-link-container { text-align: center; margin-top: 20px; }
         .back-link-container a {
             text-decoration: none;
@@ -38,21 +72,16 @@
             border-radius: 4px;
         }
         .back-link-container a:hover { background-color: #5a6268; }
-        header .button-logout { background-color: #dc3545; }
-        header .button-logout:hover { background-color: #c82333; }
-        header .button-change-password { background-color: #ffc107; color: #212529; }
-        header .button-change-password:hover { background-color: #e0a800; }
 
-        /* ESTILOS PARA LOS MENSAJES DE DJANGO */
         .messages { 
             list-style-type: none; 
             padding: 0; 
-            margin: 20px 0; /* Margen arriba y abajo */
-            text-align: center; /* Centrar el texto del mensaje */
+            margin: 20px 0; 
+            text-align: center; 
         }
         .messages li {
             padding: 10px 15px;
-            margin-bottom: 10px; /* Espacio entre mensajes si hay varios */
+            margin-bottom: 10px; 
             border-radius: 4px;
             border: 1px solid transparent;
         }
@@ -63,9 +92,10 @@
     </style>
 </head>
 <body>
-    <header class="user-info-header">
+    <header class="user-info-header"> {# Asegúrate de que esta clase se use consistentemente o que los estilos se apliquen al tag <header> genérico #}
         {% if user.is_authenticated %}
-            <strong>Usuario: {{ user.username }}</strong>
+            {# LÍNEA CORREGIDA AQUÍ 👇 #}
+            <strong>Usuario: {{ user.get_full_name|default:user.username }}</strong>
             <a href="{% url 'agendamiento:password_change' %}" class="button-change-password">Cambiar Contraseña</a>
             <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline;">
                 {% csrf_token %}

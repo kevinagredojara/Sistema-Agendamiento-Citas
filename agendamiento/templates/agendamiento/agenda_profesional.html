@@ -111,7 +111,8 @@
         <a href="{% url 'agendamiento:dashboard_profesional' %}" class="button-header button-primary">← Volver al Dashboard</a>
         <div class="header-user-info">
             {% if user.is_authenticated %}
-                <strong>Usuario: {{ user.username }} (Profesional)</strong>
+                {# LÍNEA CORREGIDA AQUÍ 👇 #}
+                <strong>Usuario: {{ user.get_full_name|default:user.username }} </strong>
                 <a href="{% url 'agendamiento:password_change' %}" class="button-change-password header-btn">Cambiar Contraseña</a>
                 <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline; margin-left: 10px;">
                     {% csrf_token %}
@@ -167,13 +168,10 @@
                             <td>{{ cita.get_estado_cita_display }}</td>
                             <td>
                                 <a href="{% url 'agendamiento:ver_detalles_paciente_cita' cita_id=cita.id %}?fecha_agenda_original={{ fecha_agenda|date:'Y-m-d' }}" class="action-link action-link-view-patient">Ver Paciente</a>
-                                
-                                {# CAMBIO: Condición para mostrar botones de asistencia 👇 #}
                                 {% if cita.estado_cita == 'Programada' and cita.puede_registrar_asistencia %}
                                     <a href="{% url 'agendamiento:confirmar_asistencia_cita' cita_id=cita.id %}?estado_propuesto=Realizada&fecha_agenda={{ fecha_agenda|date:'Y-m-d' }}" class="action-link action-link-realizada">Asistió</a>
                                     <a href="{% url 'agendamiento:confirmar_asistencia_cita' cita_id=cita.id %}?estado_propuesto=No_Asistio&fecha_agenda={{ fecha_agenda|date:'Y-m-d' }}" class="action-link action-link-no-asistio">No Asistió</a>
                                 {% elif cita.estado_cita == 'Programada' and not cita.puede_registrar_asistencia %}
-                                    {# Opcional: Mostrar un texto indicando por qué no se pueden registrar aún #}
                                     <span style="font-size: 0.8em; color: #6c757d;">Asistencia pendiente</span>
                                 {% endif %}
                             </td>

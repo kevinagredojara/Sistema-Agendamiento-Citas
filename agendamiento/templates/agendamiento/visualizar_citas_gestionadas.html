@@ -111,10 +111,11 @@
             border: 1px solid transparent;
             border-radius: 4px;
             text-decoration: none;
+            color: white; /* Color de texto blanco por defecto */
         }
-        .button-modify { color: #fff; background-color: #17a2b8; border-color: #17a2b8; }
+        .button-modify { background-color: #17a2b8; border-color: #17a2b8; }
         .button-modify:hover { background-color: #138496; border-color: #117a8b; }
-        .button-cancel { color: #fff; background-color: #dc3545; border-color: #dc3545; }
+        .button-cancel { background-color: #dc3545; border-color: #dc3545; }
         .button-cancel:hover { background-color: #c82333; border-color: #bd2130; }
 
         .button-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
@@ -122,22 +123,28 @@
         
         .header-user-info { display: flex; align-items: center; }
         .header-user-info strong { margin-right: 15px; }
-        .header-user-info .button-change-password { background-color: #ffc107; color: #212529; }
-        .header-user-info .button-change-password:hover { background-color: #e0a800; }
-        .header-user-info form button.header-btn { background-color: #dc3545; }
+        .header-user-info a.button-change-password, 
+        .header-user-info button.button-change-password { background-color: #ffc107; color: #212529; }
+        .header-user-info a.button-change-password:hover, 
+        .header-user-info button.button-change-password:hover { background-color: #e0a800; }
+        
+        .header-user-info a.button-logout, 
+        .header-user-info form button.header-btn { background-color: #dc3545; } /* Aplicar estilo base a botón de form */
+        .header-user-info a.button-logout:hover, 
         .header-user-info form button.header-btn:hover { background-color: #c82333; }
     </style>
 </head>
 <body>
-    <header>
+    <header> {# Asumimos que el header tiene la clase user-info-header o los estilos se aplican al tag header directamente #}
         <a href="{% url 'agendamiento:dashboard_asesor' %}" class="button-header button-primary">← Volver al Dashboard</a>
         <div class="header-user-info">
             {% if user.is_authenticated %}
-                <strong>Usuario: {{ user.username }}</strong>
-                <a href="{% url 'agendamiento:password_change' %}" class="button-change-password header-btn">Cambiar Contraseña</a>
+                {# LÍNEA CORREGIDA AQUÍ 👇 #}
+                <strong>Usuario: {{ user.get_full_name|default:user.username }}</strong>
+                <a href="{% url 'agendamiento:password_change' %}" class="button-header button-change-password">Cambiar Contraseña</a>
                 <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline; margin-left: 10px;">
                     {% csrf_token %}
-                    <button type="submit" class="header-btn">Cerrar Sesión</button>
+                    <button type="submit" class="header-btn button-logout">Cerrar Sesión</button>
                 </form>
             {% endif %}
         </div>
@@ -152,7 +159,7 @@
         </ul>
         {% endif %}
 
-        <h1>{{ titulo_pagina|default:"Citas Médicas Gestionadas" }}</h1>
+        <h1>{{ titulo_pagina }}</h1>
 
         <form method="get" action="" class="filter-form"> 
             {{ filter_form.as_p }} 
@@ -173,7 +180,7 @@
                         <th>Fecha y Hora Inicio</th>
                         <th>Fecha y Hora Fin</th>
                         <th>Estado</th>
-                        <th>Agendó Asesor</th>
+                        <th>Agendó</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -184,13 +191,12 @@
                         <td>{{ cita.paciente.numero_documento }}</td>
                         <td>{{ cita.profesional.user_account.get_full_name|default:cita.profesional }}</td>
                         <td>{{ cita.profesional.especialidad.nombre_especialidad }}</td>
-                        <td>{{ cita.fecha_hora_inicio_cita|date:"d/m/Y H:i" }}</td> 
-                        <td>{{ cita.fecha_hora_fin_cita|date:"d/m/Y H:i" }}</td>   
+                        <td>{{ cita.fecha_hora_inicio_cita|date:"d/m/Y H:i" }}</td>
+                        <td>{{ cita.fecha_hora_fin_cita|date:"d/m/Y H:i" }}</td>
                         <td>{{ cita.get_estado_cita_display }}</td>
-                        <td>{{ cita.asesor_que_agenda.user_account.get_full_name|default:cita.asesor_que_agenda.user_account.username|default:"N/A" }}</td>
-                        <td> 
+                        <td>{{ cita.asesor_que_agenda.user_account.get_full_name|default:cita.asesor_que_agenda.user_account.username|default:"No especificado" }}</td>
+                        <td>
                             <a href="{% url 'agendamiento:modificar_cita' cita_id=cita.id %}" class="action-button button-modify">Modificar</a>
-                            {# CAMBIO EN EL ENLACE DEL BOTÓN "Cancelar" 👇 #}
                             <a href="{% url 'agendamiento:confirmar_cancelacion_cita' cita_id=cita.id %}" class="action-button button-cancel">Cancelar</a>
                         </td>
                     </tr>

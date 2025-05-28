@@ -27,7 +27,8 @@
 <body>
     <header>
         {% if user.is_authenticated %}
-            <strong>Usuario: {{ user.username }}</strong>
+            {# LÍNEA CORREGIDA AQUÍ 👇 #}
+            <strong>Usuario: {{ user.get_full_name|default:user.username }}</strong>
             <a href="{% url 'agendamiento:password_change' %}" class="button-change-password">Cambiar Contraseña</a>
             <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline;">
                 {% csrf_token %}
@@ -44,10 +45,6 @@
         <h2>Acciones Rápidas:</h2>
         <ul>
             <li><a href="{% url 'agendamiento:ver_agenda_profesional' %}">Ver Mi Agenda</a></li> 
-            {# ENLACES REDUNDANTES ELIMINADOS 👇 #}
-            {# <li><a href="#">Consultar Citas Anteriores (Próximamente)</a></li> #}
-            {# <li><a href="#">Consultar Citas Futuras (Próximamente)</a></li> #}
-            {# Más adelante aquí irán los enlaces a las funcionalidades reales del profesional #}
         </ul>
     </div>
 </body>

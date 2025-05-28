@@ -18,25 +18,12 @@
         ul li a { text-decoration: none; color: #007bff; font-size: 1.1em; }
         ul li a:hover { text-decoration: underline; }
         .user-info { text-align: right; margin-bottom: 20px; font-size: 0.9em; }
-        /* Estilos específicos para botones del header */
         header .button-logout { background-color: #dc3545; }
         header .button-logout:hover { background-color: #c82333; }
         header .button-change-password { background-color: #ffc107; color: #212529; }
         header .button-change-password:hover { background-color: #e0a800; }
-
-        /* ESTILOS PARA LOS MENSAJES DE DJANGO */
-        .messages { 
-            list-style-type: none; 
-            padding: 0; 
-            margin: 20px 0;
-            text-align: center;
-        }
-        .messages li {
-            padding: 10px 15px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            border: 1px solid transparent;
-        }
+        .messages { list-style-type: none; padding: 0; margin: 20px 0; text-align: center; }
+        .messages li { padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; border: 1px solid transparent; }
         .messages li.success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
         .messages li.error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
         .messages li.info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
@@ -46,7 +33,8 @@
 <body>
     <header>
         {% if user.is_authenticated %}
-            <strong>Usuario: {{ user.username }}</strong>
+            {# LÍNEA CORREGIDA AQUÍ 👇 #}
+            <strong>Usuario: {{ user.get_full_name|default:user.username }}</strong>
             <a href="{% url 'agendamiento:password_change' %}" class="button-change-password">Cambiar Contraseña</a>
             <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline;">
                 {% csrf_token %}
@@ -64,6 +52,9 @@
         </ul>
         {% endif %}
         <h1>Dashboard del Asesor de Servicio</h1>
+        {# La variable nombre_usuario aquí viene del contexto de la vista del dashboard, #}
+        {# esta podría ya estar mostrando el nombre completo si la vista la prepara así. #}
+        {# El cambio que hicimos es para el user.username del header general. #}
         <p>Bienvenido, {{ nombre_usuario }}. Desde aquí podrás gestionar pacientes y citas.</p>
 
         <h2>Acciones Rápidas:</h2>
@@ -71,7 +62,6 @@
             <li><a href="{% url 'agendamiento:registrar_paciente' %}">Registrar Nuevo Paciente</a></li>
             <li><a href="{% url 'agendamiento:listar_pacientes' %}">Ver/Gestionar Pacientes</a></li>
             <li><a href="{% url 'agendamiento:consultar_disponibilidad' %}">Consultar Disponibilidad de Profesionales</a></li>
-            {# La línea modificada/añadida es la siguiente: #}
             <li><a href="{% url 'agendamiento:visualizar_citas_gestionadas' %}">Visualizar Citas Gestionadas</a></li>
         </ul>
     </div>

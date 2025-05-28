@@ -39,9 +39,14 @@
         .button-primary:hover { background-color: #0056b3; border-color: #0056b3;}
         .header-user-info { display: flex; align-items: center; }
         .header-user-info strong { margin-right: 15px; }
-        .header-user-info .button-change-password { background-color: #ffc107; color: #212529; }
-        .header-user-info .button-change-password:hover { background-color: #e0a800; }
+        .header-user-info a.button-change-password, 
+        .header-user-info button.button-change-password { background-color: #ffc107; color: #212529; }
+        .header-user-info a.button-change-password:hover, 
+        .header-user-info button.button-change-password:hover { background-color: #e0a800; }
+        
+        .header-user-info a.button-logout, 
         .header-user-info form button.header-btn { background-color: #dc3545; }
+        .header-user-info a.button-logout:hover, 
         .header-user-info form button.header-btn:hover { background-color: #c82333; }
     </style>
 </head>
@@ -50,11 +55,12 @@
         <a href="{% url 'agendamiento:dashboard_paciente' %}" class="button-header button-primary">← Volver a Mi Portal</a>
         <div class="header-user-info">
             {% if user.is_authenticated %}
-                <strong>Usuario: {{ user.username }}</strong>
-                <a href="{% url 'agendamiento:password_change' %}" class="button-change-password header-btn">Cambiar Contraseña</a>
+                {# LÍNEA CORREGIDA AQUÍ 👇 #}
+                <strong>Usuario: {{ user.get_full_name|default:user.username }}</strong>
+                <a href="{% url 'agendamiento:password_change' %}" class="button-header button-change-password">Cambiar Contraseña</a>
                 <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline; margin-left: 10px;">
                     {% csrf_token %}
-                    <button type="submit" class="button-logout">Cerrar Sesión</button>
+                    <button type="submit" class="header-btn button-logout">Cerrar Sesión</button>
                 </form>
             {% endif %}
         </div>
@@ -80,7 +86,6 @@
                         <th>Profesional</th>
                         <th>Especialidad</th>
                         <th>Estado</th>
-                        {# Podríamos añadir acción para que el paciente cancele su propia cita si la HU lo permite #}
                     </tr>
                 </thead>
                 <tbody>
