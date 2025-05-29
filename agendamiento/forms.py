@@ -2,6 +2,12 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
+# NUEVAS IMPORTACIONES para validadores de contraseña 👇
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError # Para capturar errores de validate_password
+# settings no es necesario importarlo aquí si validate_password los toma por defecto
+# from django.conf import settings 
+
 from django.utils.translation import gettext_lazy as _ 
 from .models import Paciente, ProfesionalSalud, Especialidad, Cita 
 from datetime import date
@@ -28,17 +34,12 @@ class UserForm(forms.ModelForm):
         super(UserForm, self).__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
-            # Eliminamos los atributos HTML5 específicos del PIN para el campo password
-            # if field_name == 'password':
-            #     field.widget.attrs.pop('pattern', None) # Eliminar si existe
-            #     field.widget.attrs.pop('title', None)   # Eliminar si existe
-            #     field.widget.attrs.pop('inputmode', None) # Eliminar si existe
-        # El widget de contraseña por defecto será suficiente.
-        # Django PasswordChangeForm y otras sí usan password_validation.validate_password
-        # que a su vez usa AUTH_PASSWORD_VALIDATORS de settings.py.
-        # Un ModelForm para User al crear, si no se especifica clean_password,
-        # también pasará la contraseña por los validadores de AUTH_PASSWORD_VALIDATORS
-        # cuando se llama a form.is_valid() y luego al guardar el usuario con set_password.
+        # Eliminamos cualquier atributo HTML5 específico de PIN del widget de contraseña
+        if 'password' in self.fields:
+            self.fields['password'].widget.attrs.pop('pattern', None)
+            self.fields['password'].widget.attrs.pop('title', None)
+            self.fields['password'].widget.attrs.pop('inputmode', None)
+
 
     def clean_first_name(self):
         first_name = self.cleaned_data.get('first_name')
@@ -52,14 +53,24 @@ class UserForm(forms.ModelForm):
             raise forms.ValidationError("Los apellidos solo deben contener letras y espacios.")
         return last_name
 
-    # MÉTODO clean_password() ELIMINADO PARA VOLVER A LAS VALIDACIONES ESTÁNDAR DE DJANGO 👇
-    # def clean_password(self):
-    #     password = self.cleaned_data.get('password')
-    #     if password:
-    #         if not password.isdigit():
-    #             raise forms.ValidationError("La contraseña debe ser completamente numérica.")
-    #         # ... (resto de la lógica del PIN) ...
-    #     return password
+    # MÉTODO clean_password() MODIFICADO PARA USAR VALIDATORS DE DJANGO 👇
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        # self.instance es el objeto User que se está creando.
+        # Puede no tener un pk si es un usuario nuevo, lo cual es manejado por validate_password.
+        user_for_validation = self.instance 
+        
+        if password:
+            try:
+                # Llamamos a validate_password. Usará los validadores definidos en
+                # settings.AUTH_PASSWORD_VALIDATORS.
+                validate_password(password, user=user_for_validation)
+            except DjangoValidationError as e:
+                # forms.ValidationError(e.messages) mostrará los mensajes del validador directamente.
+                # e.messages es una lista de mensajes de error.
+                self.add_error('password', e) # Asocia los errores directamente al campo password
+        return password
+
 
 # ... (El resto de tus formularios: PacienteForm, UserUpdateForm, ConsultaDisponibilidadForm,
 # BuscarPacientePorDocumentoForm, CitaFilterForm, ModificarCitaForm, PacienteDatosContactoForm,
@@ -215,19 +226,16 @@ class PacienteDatosContactoForm(forms.Form):
             if len(telefono) != 10: raise forms.ValidationError("El teléfono debe tener exactamente 10 dígitos.")
         return telefono
 
-class PacientePasswordChangeForm(PasswordChangeForm):
+class PacientePasswordChangeForm(PasswordChangeForm): # Formulario para cuando el PACIENTE cambia su PIN
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name in ['new_password1', 'new_password2']:
             self.fields[field_name].widget = forms.PasswordInput(attrs={
-                'class': 'form-control',
-                'pattern': '[0-9]{4}',
+                'class': 'form-control', 'pattern': '[0-9]{4}',
                 'title': 'Su nuevo PIN debe ser numérico y de 4 dígitos.',
-                'inputmode': 'numeric',
-                'autocomplete': 'new-password' 
+                'inputmode': 'numeric', 'autocomplete': 'new-password' 
             })
             self.fields[field_name].help_text = ("Su nuevo PIN debe ser numérico de 4 dígitos, no todos iguales y no secuencial.")
-        
         self.fields['old_password'].widget.attrs['class'] = 'form-control'
         self.fields['old_password'].label = "PIN Actual"
         self.fields['new_password1'].label = "Nuevo PIN"
@@ -235,22 +243,15 @@ class PacientePasswordChangeForm(PasswordChangeForm):
 
     def clean_new_password1(self):
         password = self.cleaned_data.get('new_password1')
-        if password:
-            if not password.isdigit():
-                raise forms.ValidationError("El nuevo PIN debe ser completamente numérico.", code='pin_not_numeric')
-            if len(password) != 4:
-                raise forms.ValidationError("El nuevo PIN debe tener exactamente 4 dígitos.", code='pin_invalid_length')
-            if len(set(password)) == 1:
-                raise forms.ValidationError("El nuevo PIN no debe tener todos los dígitos iguales (ej. 1111).", code='pin_digits_repeated')
-            
+        if password: 
+            if not password.isdigit(): raise forms.ValidationError("El nuevo PIN debe ser completamente numérico.", code='pin_not_numeric')
+            if len(password) != 4: raise forms.ValidationError("El nuevo PIN debe tener exactamente 4 dígitos.", code='pin_invalid_length')
+            if len(set(password)) == 1: raise forms.ValidationError("El nuevo PIN no debe tener todos los dígitos iguales (ej. 1111).", code='pin_digits_repeated')
             digits = [int(d) for d in password] 
             is_ascending = all(digits[i] + 1 == digits[i+1] for i in range(len(digits)-1))
             is_descending = all(digits[i] - 1 == digits[i+1] for i in range(len(digits)-1))
-
-            if is_ascending:
-                raise forms.ValidationError("El nuevo PIN no debe ser una secuencia numérica ascendente (ej. 1234).", code='pin_ascending_sequential')
-            if is_descending:
-                raise forms.ValidationError("El nuevo PIN no debe ser una secuencia numérica descendente (ej. 4321).", code='pin_descending_sequential')
+            if is_ascending: raise forms.ValidationError("El nuevo PIN no debe ser una secuencia numérica ascendente (ej. 1234).", code='pin_ascending_sequential')
+            if is_descending: raise forms.ValidationError("El nuevo PIN no debe ser una secuencia numérica descendente (ej. 4321).", code='pin_descending_sequential')
         return password
 
     def clean_new_password2(self):
@@ -258,8 +259,5 @@ class PacientePasswordChangeForm(PasswordChangeForm):
         new_password2 = self.cleaned_data.get("new_password2")
         if new_password1 and new_password2: 
             if new_password1 != new_password2:
-                raise forms.ValidationError(
-                    self.error_messages['password_mismatch'],
-                    code='password_mismatch',
-                )
+                raise forms.ValidationError( self.error_messages['password_mismatch'], code='password_mismatch')
         return new_password2

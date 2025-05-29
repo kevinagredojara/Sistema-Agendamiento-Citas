@@ -91,24 +91,28 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': 'agendamiento.validators.CustomMinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,
+        }
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': 'agendamiento.validators.CustomCommonPasswordValidator',
     },
-    { # AÑADIR DE NUEVO ESTE VALIDADOR 👇
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    {
+        'NAME': 'agendamiento.validators.CustomNumericPasswordValidator',
     },
 ]
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'es-co'
+LANGUAGE_CODE = 'es'
 
 TIME_ZONE = 'America/Bogota'
 
 USE_I18N = True
+
+USE_L10N = True
 
 USE_TZ = True
 
