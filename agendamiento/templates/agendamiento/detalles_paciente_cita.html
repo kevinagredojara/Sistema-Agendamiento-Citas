@@ -2,12 +2,13 @@
 
 {% block title %}{{ titulo_pagina|default:"Detalles del Paciente" }}{% endblock %}
 
-{% block nav_items %}
-    <a href="{% url 'agendamiento:ver_agenda_profesional' %}{% if fecha_agenda_original %}?fecha_agenda={{ fecha_agenda_original|date:'Y-m-d' }}{% endif %}" class="nav-item btn btn-outline-light">← Volver a Mi Agenda</a>
+{% block navigation %}
+    <a href="{% url 'agendamiento:dashboard_profesional' %}">Dashboard</a>
+    <a href="{% url 'agendamiento:ver_agenda_profesional' %}">Mi Agenda</a>
 {% endblock %}
 
 {% block content %}
-    <div class="container">        <h1>{{ titulo_pagina|default:"Detalles del Paciente" }}</h1>
+    <div class="container" style="min-height: 600px; padding-bottom: 50px; max-width: 900px; margin: 0 auto;">        <h1>{{ titulo_pagina|default:"Detalles del Paciente" }}</h1>
 
         {% if messages %}
             <div class="messages">
@@ -23,9 +24,7 @@
             <div class="context-info">
                 Mostrando detalles del paciente para la cita del <strong>{{ cita_contexto.fecha_hora_inicio_cita|date:"l, d \\d\\e F \\d\\e Y" }}</strong> 
                 a las <strong>{{ cita_contexto.fecha_hora_inicio_cita|time:"H:i" }}</strong>.
-            </div>
-
-            <div class="paciente-details">
+            </div>            <div class="paciente-details" style="padding: 30px; margin-bottom: 40px;">
                 <h2>Información del Paciente</h2>
                 <div class="detail-item">
                     <strong>Nombre Completo:</strong> {{ paciente.user_account.get_full_name|default:"No especificado" }}
@@ -45,11 +44,14 @@
                 <div class="detail-item">
                     <strong>Correo Electrónico:</strong> {{ paciente.user_account.email|default:"No especificado" }}
                 </div>
-            </div>
-        {% else %}
+            </div>        {% else %}
             <div class="empty-state">
                 <p>No se pudo cargar la información del paciente o la cita.</p>
             </div>
         {% endif %}
+          <!-- Botón para regresar -->
+        <div style="display: flex; justify-content: center; margin-top: 30px;">
+            <a href="{% url 'agendamiento:ver_agenda_profesional' %}{% if request.GET.fecha_agenda_original %}?fecha_agenda={{ request.GET.fecha_agenda_original }}{% endif %}" class="btn btn-secondary">← Regresar</a>
+        </div>
     </div>
 {% endblock %}

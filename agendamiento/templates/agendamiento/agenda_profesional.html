@@ -2,12 +2,12 @@
 
 {% block title %}{{ titulo_pagina|default:"Mi Agenda" }}{% endblock %}
 
-{% block nav_items %}
-    <a href="{% url 'agendamiento:dashboard_profesional' %}" class="nav-item btn btn-outline-light">← Volver al Dashboard</a>
+{% block navigation %}
+    <a href="{% url 'agendamiento:dashboard_profesional' %}">Dashboard</a>
 {% endblock %}
 
 {% block content %}
-    <div class="container">        <h1>{{ titulo_pagina|default:"Mi Agenda" }}</h1>
+    <div class="container" style="min-height: 600px; padding-bottom: 40px; max-width: 900px; margin: 0 auto;">        <h1>{{ titulo_pagina|default:"Mi Agenda" }}</h1>
         {% if profesional_actual %}
             <div class="sub-header-info">
                 <p>Dr(a). {{ profesional_actual.user_account.get_full_name|default:user.username }}</p>
@@ -29,13 +29,10 @@
             <label for="fecha_agenda_input">Seleccionar fecha:</label>
             <input type="date" id="fecha_agenda_input" name="fecha_agenda" value="{{ fecha_agenda|date:'Y-m-d' }}">
             <button type="submit" class="btn btn-primary">Ver Fecha</button>
-        </form>
-
-        <div class="agenda-section">
-            {% if citas_del_dia %}
-                <div class="table-responsive">
+        </form>        <div class="agenda-section" style="margin-top: 30px;">
+            {% if citas_del_dia %}<div class="table-responsive">
                     <table class="table table-striped">
-                        <thead>
+                        <thead class="table-dark">
                             <tr>
                                 <th>Hora Inicio</th>
                                 <th>Hora Fin</th>
@@ -72,8 +69,11 @@
             {% else %}
                 <div class="empty-state">
                     <p>No tiene citas programadas para el día {{ fecha_agenda_formateada }}.</p>
-                </div>
-            {% endif %}
+                </div>            {% endif %}
+        </div>
+        
+        <div class="back-link-container">
+            <a href="{% url 'agendamiento:dashboard_profesional' %}" class="back-link">Volver al Dashboard del Profesional</a>
         </div>
     </div>
 {% endblock %}

@@ -3,18 +3,15 @@
 {% block title %}Dashboard Profesional{% endblock %}
 
 {% block navigation %}
-    <a href="{% url 'agendamiento:dashboard_profesional' %}">Dashboard</a>
     <a href="{% url 'agendamiento:ver_agenda_profesional' %}">Mi Agenda</a>
 {% endblock %}
 
 {% block content %}
     <div class="dashboard-asesor-container">
         <h1>Dashboard del Profesional de la Salud</h1>
-        <p>Bienvenido, Dr(a). {{ nombre_usuario }}. Desde aquí podrá gestionar su agenda y registrar la asistencia de sus pacientes.</p>
-
-        <h2>Acciones Rápidas:</h2>
-        <div class="dashboard-grid">
-            <a href="{% url 'agendamiento:ver_agenda_profesional' %}" class="btn btn-primary">Ver Mi Agenda</a>
+        <p>Bienvenido, Dr(a). {{ nombre_usuario }}. Desde aquí podrá gestionar su agenda y registrar la asistencia de sus pacientes.</p>        <h2>Acciones Rápidas:</h2>
+        <div class="dashboard-grid" style="display: flex; justify-content: center; align-items: center;">
+            <a href="{% url 'agendamiento:ver_agenda_profesional' %}" class="btn btn-primary" style="padding: 10px 20px; font-size: 14px; width: auto; display: inline-block;">Ver Mi Agenda</a>
         </div>
     </div>
 {% endblock %}
