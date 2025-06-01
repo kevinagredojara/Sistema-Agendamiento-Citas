@@ -167,7 +167,7 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
     except ValueError:
         messages.error(request, "Formato de fecha u hora inválido en la URL.")
         return redirect('agendamiento:consultar_disponibilidad')
-
+    
     current_tz = timezone.get_current_timezone()
     fecha_hora_inicio_cita_naive = datetime.combine(fecha_obj, hora_obj)
     fecha_hora_inicio_cita_aware = timezone.make_aware(fecha_hora_inicio_cita_naive, current_tz)

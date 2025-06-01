@@ -48,7 +48,9 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',  # Debe estar antes de middleware personalizado
+    'agendamiento.middleware.SessionSecurityMiddleware',  # Seguridad de sesiones personalizada
+    'agendamiento.middleware.SessionIntegrityMiddleware',  # Integridad de sesiones
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -137,3 +139,24 @@ LOGIN_REDIRECT_URL = '/'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
+# ========== CONFIGURACIONES DE SEGURIDAD DE SESIONES ==========
+# Configurar las sesiones para que expiren cuando se cierre el navegador
+SESSION_COOKIE_AGE = 3600  # 1 hora en segundos (backup por si SESSION_EXPIRE_AT_BROWSER_CLOSE falla)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Expira la sesión cuando se cierra el navegador
+
+# Configuraciones adicionales de seguridad de sesiones
+SESSION_COOKIE_SECURE = False  # Cambiar a True en producción con HTTPS
+SESSION_COOKIE_HTTPONLY = True  # Evita acceso desde JavaScript
+SESSION_COOKIE_SAMESITE = 'Lax'  # Protección CSRF adicional
+
+# Configurar el motor de sesiones para mayor seguridad
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Usar base de datos para sesiones
+
+# Regenerar clave de sesión en cada login para evitar session fixation
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Configuraciones adicionales de seguridad
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'

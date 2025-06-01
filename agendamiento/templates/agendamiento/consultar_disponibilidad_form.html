@@ -1,102 +1,57 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ titulo_pagina|default:"Consultar Disponibilidad" }} - Sistema de Citas</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; padding: 0; background-color: #f4f4f4; color: #333; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 700px; margin: 40px auto; }
-        h1 { color: #0056b3; text-align: center; margin-bottom: 20px; }
-        form p { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; }
-        select, input[type="date"] {
-            width: 100%; 
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-bottom: 5px;
-            box-sizing: border-box;
-        }
-        button[type="submit"] { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: auto; }
-        button[type="submit"]:hover { background-color: #0056b3; }
-        
-        .results-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
-        .results-section h2 { text-align: left; color: #333; font-size: 1.2em; margin-bottom: 10px;}
-        .no-results { font-style: italic; color: #777; }
-        
-        .slots-list { list-style-type: none; padding: 0; }
-        .slots-list li { margin-bottom: 8px; }
-        .slot-link {
-            display: block;
-            background-color: #28a745; 
-            color: white;
-            padding: 10px;
-            text-decoration: none;
-            border-radius: 4px;
-            text-align: center;
-            transition: background-color 0.3s ease;
-        }
-        .slot-link:hover { background-color: #218838; } 
+{% extends "agendamiento/base.html" %}
+{% load static %}
 
-        .messages { list-style-type: none; padding: 0; margin-bottom: 20px; }
-        .messages li.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 10px; border-radius: 4px; }
-        .messages li.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; border-radius: 4px; }
-        .messages li.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 10px; border-radius: 4px; }
+{% block title %}{{ titulo_pagina|default:"Consultar Disponibilidad" }}{% endblock %}
 
-        .back-link-container { text-align: center; margin-top: 30px; }
-        .back-link-container a {
-            text-decoration: none;
-            padding: 10px 20px;
-            background-color: #6c757d;
-            color: white;
-            border-radius: 4px;
-        }
-        .back-link-container a:hover { background-color: #5a6268; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{{ titulo_pagina|default:"Consultar Disponibilidad" }}</h1>
+{% block navigation %}
+    <a href="{% url 'agendamiento:dashboard_asesor' %}">Dashboard</a>
+    <a href="{% url 'agendamiento:registrar_paciente' %}">Registrar Paciente</a>
+    <a href="{% url 'agendamiento:listar_pacientes' %}">Gestionar Pacientes</a>
+    <a href="{% url 'agendamiento:consultar_disponibilidad' %}">Consultar Disponibilidad</a>
+    <a href="{% url 'agendamiento:visualizar_citas_gestionadas' %}">Citas Gestionadas</a>
+{% endblock %}
 
-        {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+{% block content %}
+<div class="form-asesor-container">
+    <h1>{{ titulo_pagina|default:"Consultar Disponibilidad" }}</h1>
 
-        <form method="get" action=""> 
-            {{ form.as_p }}
-            <p><button type="submit">Consultar Disponibilidad</button></p>
-        </form>
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 
-        {% if profesional_seleccionado and fecha_seleccionada %}
-            <div class="results-section">
-                <h2>Disponibilidad para {{ profesional_seleccionado }} el {{ fecha_seleccionada|date:"l, d \d\e F \d\e Y" }}</h2>
-                
-                {% if slots_disponibles %}
-                    <p>Seleccione un horario para agendar:</p>
-                    <ul class="slots-list">
-                        {% for slot_inicio, slot_fin in slots_disponibles %}
-                            <li>
-                                {# VERIFICA QUE LOS NOMBRES DE ARGUMENTO COINCIDAN CON urls.py #}
-                                <a href="{% url 'agendamiento:seleccionar_paciente_para_cita' profesional_id=profesional_seleccionado.id fecha_seleccionada_str=fecha_seleccionada|date:'Y-m-d' hora_inicio_slot_str=slot_inicio|time:'H:i' %}" class="slot-link">
-                                    {{ slot_inicio|time:"H:i" }} - {{ slot_fin|time:"H:i" }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="no-results">No hay horarios disponibles para los criterios seleccionados.</p>
-                {% endif %}
-            </div>
-        {% endif %}
+    <form method="get" action="">
+        {{ form.as_p }}
+        <p><button type="submit" class="btn btn-primary">Consultar Disponibilidad</button></p>
+    </form>
 
-        <div class="back-link-container">
-            <a href="{% url 'agendamiento:dashboard_asesor' %}">Volver al Dashboard del Asesor</a>
+    {% if profesional_seleccionado and fecha_seleccionada %}
+        <div class="results-section">
+            <h2>Disponibilidad para {{ profesional_seleccionado }} el {{ fecha_seleccionada|date:"l, d \d\e F \d\e Y" }}</h2>
+            
+            {% if slots_disponibles %}
+                <p>Seleccione un horario para agendar:</p>
+                <ul class="slots-list">
+                    {% for slot_inicio, slot_fin in slots_disponibles %}
+                        <li>
+                            {# VERIFICA QUE LOS NOMBRES DE ARGUMENTO COINCIDAN CON urls.py #}
+                            <a href="{% url 'agendamiento:seleccionar_paciente_para_cita' profesional_id=profesional_seleccionado.id fecha_seleccionada_str=fecha_seleccionada|date:'Y-m-d' hora_inicio_slot_str=slot_inicio|time:'H:i' %}" class="slot-link">
+                                {{ slot_inicio|time:"H:i" }} - {{ slot_fin|time:"H:i" }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="no-results">No hay horarios disponibles para los criterios seleccionados.</p>
+            {% endif %}
         </div>
+    {% endif %}
+
+    <div class="back-link-container">
+        <a href="{% url 'agendamiento:dashboard_asesor' %}" class="back-link">Volver al Dashboard del Asesor</a>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

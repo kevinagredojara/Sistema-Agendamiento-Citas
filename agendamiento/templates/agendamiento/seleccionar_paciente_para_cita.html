@@ -1,137 +1,71 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ titulo_pagina|default:"Agendar Cita" }} - Sistema de Citas</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; padding: 0; background-color: #f4f4f4; color: #333; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 700px; margin: 40px auto; }
-        h1 { color: #0056b3; text-align: center; margin-bottom: 10px; }
-        h2 { color: #333; font-size: 1.3em; margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;}
-        p { margin-bottom: 10px; line-height: 1.6; }
-        strong { font-weight: bold; }
-        
-        /* Estilos para formularios */
-        form p { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; }
-        input[type="text"], input[type="password"], input[type="email"], input[type="date"], select { 
-            width: calc(100% - 22px); 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            margin-bottom: 5px;
-            box-sizing: border-box; 
-        }
-        select { width: 100%; } /* Asegura que el select ocupe todo el ancho si se usa */
+{% extends "agendamiento/base.html" %}
+{% load static %}
 
-        button[type="submit"], .button-search { 
-            color: white; 
-            padding: 10px 15px; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 1em; 
-            margin-top: 10px;
-        }
-        button[type="submit"] { background-color: #28a745; width: 100%;} /* Botón de agendar */
-        button[type="submit"]:hover { background-color: #218838; }
-        .button-search { background-color: #007bff; width: auto; } /* Botón de buscar */
-        .button-search:hover { background-color: #0056b3; }
-        
-        .messages { list-style-type: none; padding: 0; margin-bottom: 20px; }
-        .messages li.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 10px; border-radius: 4px; }
-        .messages li.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; border-radius: 4px; }
-        .messages li.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 10px; border-radius: 4px; }
+{% block title %}{{ titulo_pagina|default:"Agendar Cita" }}{% endblock %}
 
-        .cita-details, .paciente-details { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .cita-details p, .paciente-details p { margin-bottom: 8px; font-size: 1em; }
-        .paciente-details strong, .cita-details strong { color: #0056b3; }
+{% block navigation %}
+    <a href="{% url 'agendamiento:dashboard_asesor' %}">Dashboard</a>
+    <a href="{% url 'agendamiento:registrar_paciente' %}">Registrar Paciente</a>
+    <a href="{% url 'agendamiento:listar_pacientes' %}">Gestionar Pacientes</a>
+    <a href="{% url 'agendamiento:consultar_disponibilidad' %}">Consultar Disponibilidad</a>
+    <a href="{% url 'agendamiento:visualizar_citas_gestionadas' %}">Citas Gestionadas</a>
+{% endblock %}
 
-        .form-section { margin-top: 20px; }
-        .search-form-container { margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid #eee;}
+{% block content %}
+<div class="form-asesor-container">
+    <h1>{{ titulo_pagina }}</h1>
 
-        .actions-container { margin-top: 30px; text-align: center; }
-        .actions-container a {
-            text-decoration: none;
-            padding: 10px 20px;
-            background-color: #6c757d;
-            color: white;
-            border-radius: 4px;
-            margin-left: 10px;
-        }
-        .actions-container a:hover { background-color: #5a6268; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{{ titulo_pagina }}</h1>
+    <div class="card cita-details">
+        <h2>Detalles del Horario Seleccionado</h2>
+        <p><strong>Profesional:</strong> {{ profesional.user_account.get_full_name|default:profesional.user_account.username }}</p>
+        <p><strong>Especialidad:</strong> {{ profesional.especialidad.nombre_especialidad }}</p>
+        <p><strong>Fecha:</strong> {{ fecha_seleccionada_obj|date:"l, d \d\e F \d\e Y" }}</p>
+        <p><strong>Hora de Inicio:</strong> {{ hora_inicio_slot_obj|time:"H:i" }}</p>
+        <p><strong>Hora de Fin Estimada:</strong> {{ fecha_hora_fin_cita|time:"H:i" }}</p>
+    </div>
 
-        {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+    <div class="card search-form-container">
+        <h2>Buscar Paciente</h2>
+        {# Formulario para buscar paciente por número de documento. Se envía con GET a la misma URL #}
+        <form method="get" action="">
+            {# Pasamos los parámetros originales del slot para que no se pierdan al buscar #}
+            <input type="hidden" name="profesional_id_param" value="{{ profesional.id }}"> {# Lo usaremos para reconstruir URL si es necesario, o podemos quitarlo #}
+            <input type="hidden" name="fecha_seleccionada_param" value="{{ fecha_seleccionada_obj|date:'Y-m-d' }}">
+            <input type="hidden" name="hora_inicio_slot_param" value="{{ hora_inicio_slot_obj|time:'H:i' }}">
+            
+            {{ form_buscar_paciente.numero_documento.label_tag }}
+            {{ form_buscar_paciente.numero_documento }}
+            {% if form_buscar_paciente.numero_documento.errors %}
+                <ul class="errorlist">
+                    {% for error in form_buscar_paciente.numero_documento.errors %}<li>{{ error }}</li>{% endfor %}
+                </ul>
+            {% endif %}
+            <button type="submit" name="buscar_paciente" class="btn btn-primary mt-2">Buscar Paciente</button>
+        </form>
+    </div>    {% if paciente_encontrado %}
+        <div class="paciente-details">
+            <p><strong>Nombre:</strong> {{ paciente_encontrado.user_account.get_full_name|default:paciente_encontrado.user_account.username }}</p>
+            <p><strong>Documento:</strong> {{ paciente_encontrado.get_tipo_documento_display }} - {{ paciente_encontrado.numero_documento }}</p>
+            <p><strong>Teléfono:</strong> {{ paciente_encontrado.telefono_contacto }}</p>
+            <p><strong>Correo:</strong> {{ paciente_encontrado.user_account.email }}</p>
 
-        <div class="cita-details">
-            <h2>Detalles del Horario Seleccionado</h2>
-            <p><strong>Profesional:</strong> {{ profesional.user_account.get_full_name|default:profesional.user_account.username }}</p>
-            <p><strong>Especialidad:</strong> {{ profesional.especialidad.nombre_especialidad }}</p>
-            <p><strong>Fecha:</strong> {{ fecha_seleccionada_obj|date:"l, d \d\e F \d\e Y" }}</p>
-            <p><strong>Hora de Inicio:</strong> {{ hora_inicio_slot_obj|time:"H:i" }}</p>
-            <p><strong>Hora de Fin Estimada:</strong> {{ fecha_hora_fin_cita|time:"H:i" }}</p>
-        </div>
-
-        <hr>
-
-        <div class="search-form-container">
-            <h2>Buscar Paciente</h2>
-            {# Formulario para buscar paciente por número de documento. Se envía con GET a la misma URL #}
-            <form method="get" action="">
-                {# Pasamos los parámetros originales del slot para que no se pierdan al buscar #}
-                <input type="hidden" name="profesional_id_param" value="{{ profesional.id }}"> {# Lo usaremos para reconstruir URL si es necesario, o podemos quitarlo #}
-                <input type="hidden" name="fecha_seleccionada_param" value="{{ fecha_seleccionada_obj|date:'Y-m-d' }}">
-                <input type="hidden" name="hora_inicio_slot_param" value="{{ hora_inicio_slot_obj|time:'H:i' }}">
-                
-                {{ form_buscar_paciente.numero_documento.label_tag }}
-                {{ form_buscar_paciente.numero_documento }}
-                {% if form_buscar_paciente.numero_documento.errors %}
-                    <ul class="errorlist">
-                        {% for error in form_buscar_paciente.numero_documento.errors %}<li>{{ error }}</li>{% endfor %}
-                    </ul>
-                {% endif %}
-                <button type="submit" name="buscar_paciente" class="button-search" style="margin-top:10px;">Buscar Paciente</button>
+            <form method="post" action="{% url 'agendamiento:seleccionar_paciente_para_cita' profesional_id=profesional.id fecha_seleccionada_str=fecha_seleccionada_obj|date:'Y-m-d' hora_inicio_slot_str=hora_inicio_slot_obj|time:'H:i' %}">
+                {% csrf_token %}
+                <input type="hidden" name="paciente_id_confirmado" value="{{ paciente_encontrado.id }}">
+                <button type="submit" class="btn btn-success btn-full">Confirmar y Agendar Cita para {{ paciente_encontrado.user_account.first_name }}</button>
             </form>
         </div>
-
-        {% if paciente_encontrado %}
-            <div class="paciente-details">
-                <h2>Paciente Encontrado</h2>
-                <p><strong>Nombre:</strong> {{ paciente_encontrado.user_account.get_full_name|default:paciente_encontrado.user_account.username }}</p>
-                <p><strong>Documento:</strong> {{ paciente_encontrado.get_tipo_documento_display }} - {{ paciente_encontrado.numero_documento }}</p>
-                <p><strong>Teléfono:</strong> {{ paciente_encontrado.telefono_contacto }}</p>
-                <p><strong>Correo:</strong> {{ paciente_encontrado.user_account.email }}</p>
-
-                <form method="post" action="{% url 'agendamiento:seleccionar_paciente_para_cita' profesional_id=profesional.id fecha_seleccionada_str=fecha_seleccionada_obj|date:'Y-m-d' hora_inicio_slot_str=hora_inicio_slot_obj|time:'H:i' %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="paciente_id_confirmado" value="{{ paciente_encontrado.id }}">
-                    <button type="submit">Confirmar y Agendar Cita para {{ paciente_encontrado.user_account.first_name }}</button>
-                </form>
-            </div>
-        {% elif request.GET.buscar_paciente and not paciente_encontrado and form_buscar_paciente.is_valid %}
-             {# Se intentó buscar pero no se encontró, y el formulario de búsqueda era válido (tenía un num_documento) #}
-            <div class="paciente-details">
-                 <p>No se encontró un paciente activo con el número de documento proporcionado.</p>
-                 <p><a href="{% url 'agendamiento:registrar_paciente' %}?next={{ request.get_full_path|urlencode }}">Registrar Nuevo Paciente</a></p>
-            </div>
-        {% endif %}
-
-        <div class="actions-container">
-            <a href="{% url 'agendamiento:consultar_disponibilidad' %}?profesional={{ profesional.id }}&fecha={{ fecha_seleccionada_obj|date:'Y-m-d' }}">Cancelar y Volver a Horarios</a>
-            <a href="{% url 'agendamiento:dashboard_asesor' %}">Volver al Dashboard</a>
+    {% elif request.GET.buscar_paciente and not paciente_encontrado and form_buscar_paciente.is_valid %}
+         {# Se intentó buscar pero no se encontró, y el formulario de búsqueda era válido (tenía un num_documento) #}
+        <div class="paciente-details">
+             <p>No se encontró un paciente activo con el número de documento proporcionado.</p>
+             <p><a href="{% url 'agendamiento:registrar_paciente' %}?next={{ request.get_full_path|urlencode }}" class="btn btn-secondary">Registrar Nuevo Paciente</a></p>
         </div>
+    {% endif %}
+
+    <div class="back-link-container">
+        <a href="{% url 'agendamiento:consultar_disponibilidad' %}?profesional={{ profesional.id }}&fecha={{ fecha_seleccionada_obj|date:'Y-m-d' }}" class="back-link">Cancelar y Volver a Horarios</a>
+        <a href="{% url 'agendamiento:dashboard_asesor' %}" class="back-link">Volver al Dashboard</a>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

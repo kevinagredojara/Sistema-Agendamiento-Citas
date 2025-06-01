@@ -6,12 +6,13 @@ from . import views
 from . import views_asesor
 from . import views_profesional
 from . import views_paciente
+from . import views_auth
 
 app_name = 'agendamiento'
 
 urlpatterns = [
-    path('login/', auth_views.LoginView.as_view(template_name='agendamiento/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
+    path('login/', views_auth.CustomLoginView.as_view(), name='login'),
+    path('logout/', views_auth.CustomLogoutView.as_view(), name='logout'),
 
     path('password_change/',
          auth_views.PasswordChangeView.as_view(

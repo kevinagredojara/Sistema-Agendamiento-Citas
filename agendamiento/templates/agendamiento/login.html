@@ -1,39 +1,69 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Sistema de Citas</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 400px; margin: 40px auto; }
-        h2 { text-align: center; color: #333; }
-        form p { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #555; }
-        input[type="text"], input[type="password"] { width: calc(100% - 22px); padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
-        button:hover { background-color: #0056b3; }
-        .errorlist { list-style-type: none; padding: 0; color: red; font-size: 0.9em; }
-        .errorlist li { margin-bottom: 5px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Iniciar Sesión</h2>
+{% extends 'agendamiento/base.html' %}
 
-        {% if form.errors %}
-            <p style="color: red;">Tu nombre de usuario y contraseña no coinciden. Por favor, inténtalo de nuevo.</p>
-        {% endif %}
+{% block title %}Iniciar Sesión - Medical Integral{% endblock %}
 
-        <form method="post" action="{% url 'agendamiento:login' %}">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <p><button type="submit">Iniciar Sesión</button></p>
-        </form>
+{% block content %}
+<div class="login-container">
+    <h1>Iniciar Sesión</h1>
+    
+    {% if form.errors %}
+        <div class="message message-error">
+            Tu nombre de usuario y contraseña no coinciden. Por favor, inténtalo de nuevo.
+        </div>
+    {% endif %}
 
-        {# Puedes añadir un enlace para registrarse o recuperar contraseña más adelante si es necesario #}
-        {# <p><a href="#">¿Olvidaste tu contraseña?</a></p> #}
-        {# <p><a href="#">Crear una cuenta</a></p> #}
+    <form method="post" action="{% url 'agendamiento:login' %}">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="id_username" class="form-label">Nombre de usuario</label>
+            <input type="text" name="username" class="form-control" id="id_username" required>
+            {% if form.username.errors %}
+                {% for error in form.username.errors %}
+                    <span class="error-message">{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_password" class="form-label">Contraseña</label>
+            <input type="password" name="password" class="form-control" id="id_password" required>
+            {% if form.password.errors %}
+                {% for error in form.password.errors %}
+                    <span class="error-message">{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+    </form>
+    
+    <div class="security-info">
+        <small class="text-muted">
+            <i class="fas fa-shield-alt"></i> 
+            Por tu seguridad, tu sesión expirará cuando cierres el navegador o después de 2 horas de inactividad.
+        </small>
     </div>
-</body>
-</html>
+</div>
+
+<style>
+.security-info {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #28a745;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.security-info small {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.security-info i {
+    color: #28a745;
+    margin-right: 5px;
+}
+</style>
+{% endblock %}

@@ -1,37 +1,48 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ titulo_pagina }}</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        .container { max-width: 700px; margin: auto; padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px;}
-        h1 { color: #333; }
-        p { line-height: 1.6; }
-        strong { color: #0056b3; }
-        .code { background-color: #eee; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
-        .todo { color: red; font-weight: bold; }
-        a { color: #007bff; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{{ titulo_pagina }}</h1>
+{% extends 'agendamiento/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'agendamiento/css/components.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="placeholder-container">
+        <h1 class="placeholder-title">{{ titulo_pagina }}</h1>
+        
         <p>Has seleccionado agendar una cita para:</p>
-        <ul>
-            <li><strong>Profesional:</strong> {{ profesional.user_account.get_full_name|default:profesional.user_account.username }} ({{ profesional.especialidad.nombre_especialidad }})</li>
-            <li><strong>Fecha:</strong> {{ fecha_seleccionada|date:"l, d \d\e F \d\e Y" }}</li>
-            <li><strong>Hora de Inicio:</strong> {{ hora_inicio_slot|time:"H:i" }}</li>
-        </ul>
+        
+        <div class="detail-items">
+            <div class="detail-item">
+                <span class="detail-label">Profesional:</span>
+                <span class="detail-value">{{ profesional.user_account.get_full_name|default:profesional.user_account.username }} ({{ profesional.especialidad.nombre_especialidad }})</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Fecha:</span>
+                <span class="detail-value">{{ fecha_seleccionada|date:"l, d \d\e F \d\e Y" }}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Hora de Inicio:</span>
+                <span class="detail-value">{{ hora_inicio_slot|time:"H:i" }}</span>
+            </div>
+        </div>
 
         <hr>
-        <p class="todo">PENDIENTE:</p>
+        <p class="todo-text">PENDIENTE:</p>
         <p>Aquí irá un formulario para buscar y seleccionar un paciente existente, o un enlace para registrar un nuevo paciente si no se encuentra.</p>
         <p>Una vez seleccionado el paciente, se confirmarán los detalles y se creará la cita.</p>
         <hr>
-        <p><a href="{% url 'agendamiento:consultar_disponibilidad' %}?profesional={{ profesional.id }}&fecha={{ fecha_seleccionada|date:'Y-m-d' }}">Volver a la selección de horarios</a></p>
-        <p><a href="{% url 'agendamiento:dashboard_asesor' %}">Volver al Dashboard del Asesor</a></p>
+        
+        <div class="action-buttons">
+            <a href="{% url 'agendamiento:consultar_disponibilidad' %}?profesional={{ profesional.id }}&fecha={{ fecha_seleccionada|date:'Y-m-d' }}" class="btn btn-secondary">Volver a la selección de horarios</a>
+            <a href="{% url 'agendamiento:dashboard_asesor' %}" class="btn btn-primary">Volver al Dashboard del Asesor</a>
+        </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block header_nav %}
+<a href="{% url 'agendamiento:dashboard_asesor' %}" class="btn-header">← Dashboard del Asesor</a>
+{% endblock %}

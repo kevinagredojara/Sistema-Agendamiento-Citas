@@ -1,167 +1,68 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modificar Cita - Sistema de Citas</title>
-    <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
-        header { background-color: #0056b3; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-        header a.button-header, header button.header-btn {
-            color: white; text-decoration: none; background-color: #007bff; 
-            padding: 5px 10px; border-radius: 4px; font-size: 0.9em; 
-            margin-left: 10px; border: none; cursor: pointer;
-        }
-        header a.button-header:hover, header button.header-btn:hover { background-color: #0056b3; }
-        
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 800px; margin: 20px auto; }
-        h1 { color: #0056b3; text-align: center; margin-top: 0; margin-bottom: 20px;}
-        .messages { list-style-type: none; padding: 0; margin: 0 0 20px 0; text-align: center; }
-        .messages li { padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; border: 1px solid transparent; }
-        .messages li.success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
-        .messages li.error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
-        .messages li.info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
-        .messages li.warning { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
+{% extends "agendamiento/base.html" %}
 
-        .cita-details, .modification-form-section, .availability-section {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-        .cita-details h2, .modification-form-section h2, .availability-section h2 {
-            color: #333;
-            font-size: 1.2em;
-            margin-top: 0;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-        .cita-details p { margin: 5px 0; font-size: 0.95em; }
-        .cita-details strong { color: #555; }
+{% block title %}Modificar Cita{% endblock %}
 
-        .modification-form label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-        .modification-form input[type="date"], 
-        .modification-form select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 0.9em;
-            margin-bottom: 15px; 
-        }
-        .modification-form .form-field-wrapper p {
-             margin-bottom: 15px;
-        }
-         .modification-form .form-field-wrapper { 
-             margin-bottom: 15px;
-        }
-        .modification-form button[type="submit"] {
-            background-color: #007bff; 
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1em;
-        }
-        .modification-form button[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-        
-        .slots-disponibles { list-style-type: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
-        .slots-disponibles li { margin-bottom: 0; }
-        .slots-disponibles a.slot-link { /* Cambiado de button a a.slot-link */
-            display: block;
-            background-color: #28a745; 
-            color: white;
-            padding: 8px 12px;
-            text-decoration: none;
-            border-radius: 4px;
-            text-align: center;
-            font-size: 0.9em;
-            border: none; 
-            cursor: pointer; 
-        }
-        .slots-disponibles a.slot-link:hover { /* Cambiado de button a a.slot-link */
-            background-color: #218838;
-        }
-        .no-slots { color: #777; font-style: italic; }
+{% block navigation %}
+    <a href="{% url 'agendamiento:dashboard_asesor' %}">Dashboard</a>
+    <a href="{% url 'agendamiento:registrar_paciente' %}">Registrar Paciente</a>
+    <a href="{% url 'agendamiento:listar_pacientes' %}">Gestionar Pacientes</a>
+    <a href="{% url 'agendamiento:consultar_disponibilidad' %}">Consultar Disponibilidad</a>
+    <a href="{% url 'agendamiento:visualizar_citas_gestionadas' %}">Citas Gestionadas</a>
+{% endblock %}
 
-        .button-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
-        .button-primary:hover { background-color: #0056b3; border-color: #0056b3;}
-        .header-user-info { display: flex; align-items: center; }
-        .header-user-info strong { margin-right: 15px; }
-        .header-user-info .button-change-password { background-color: #ffc107; color: #212529; }
-        .header-user-info .button-change-password:hover { background-color: #e0a800; }
-        .header-user-info form button.header-btn { background-color: #dc3545; }
-        .header-user-info form button.header-btn:hover { background-color: #c82333; }
-    </style>
-</head>
-<body>
-    <header>
-        <a href="{% url 'agendamiento:visualizar_citas_gestionadas' %}" class="button-header button-primary">← Volver al Listado</a>
-        <div class="header-user-info">
-            {% if user.is_authenticated %}
-                <strong>Usuario: {{ user.username }}</strong>
-                <a href="{% url 'agendamiento:password_change' %}" class="button-change-password header-btn">Cambiar Contraseña</a>
-                <form method="post" action="{% url 'agendamiento:logout' %}" style="display: inline; margin-left: 10px;">
-                    {% csrf_token %}
-                    <button type="submit" class="header-btn">Cerrar Sesión</button>
-                </form>
-            {% endif %}
-        </div>
-    </header>
-
-    <div class="container">
-        <h1>Modificar Cita Médica</h1>
+{% block content %}
+    <div class="form-asesor-container">        <h1>Modificar Cita Médica</h1>
 
         {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-            {% endfor %}
-        </ul>
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
         {% endif %}
 
         {% if cita_actual %}
         <div class="cita-details">
             <h2>Detalles de la Cita Actual</h2>
-            <p><strong>Paciente:</strong> {{ cita_actual.paciente.user_account.get_full_name|default:cita_actual.paciente }} (Doc: {{ cita_actual.paciente.numero_documento }})</p>
-            <p><strong>Profesional:</strong> {{ cita_actual.profesional.user_account.get_full_name|default:cita_actual.profesional }} ({{ cita_actual.profesional.especialidad.nombre_especialidad }})</p>
-            <p><strong>Fecha y Hora Actual:</strong> {{ cita_actual.fecha_hora_inicio_cita|date:"l, d \\d\\e F \\d\\e Y, H:i" }}</p>
-            <p><strong>Estado Actual:</strong> {{ cita_actual.get_estado_cita_display }}</p>
+            <div class="detail-item">
+                <strong>Paciente:</strong> {{ cita_actual.paciente.user_account.get_full_name|default:cita_actual.paciente }} (Doc: {{ cita_actual.paciente.numero_documento }})
+            </div>
+            <div class="detail-item">
+                <strong>Profesional:</strong> {{ cita_actual.profesional.user_account.get_full_name|default:cita_actual.profesional }} ({{ cita_actual.profesional.especialidad.nombre_especialidad }})
+            </div>
+            <div class="detail-item">
+                <strong>Fecha y Hora Actual:</strong> {{ cita_actual.fecha_hora_inicio_cita|date:"l, d \\d\\e F \\d\\e Y, H:i" }}
+            </div>
+            <div class="detail-item">
+                <strong>Estado Actual:</strong> {{ cita_actual.get_estado_cita_display }}
+            </div>
         </div>
         {% endif %}
 
-        <div class="modification-form-section">
+        <div class="form-section">
             <h2>Seleccionar Nueva Fecha y/o Profesional</h2>
-            <form method="get" action="{% if cita_actual %}{% url 'agendamiento:modificar_cita' cita_id=cita_actual.id %}{% endif %}" class="modification-form">
+            <form method="get" action="{% if cita_actual %}{% url 'agendamiento:modificar_cita' cita_id=cita_actual.id %}{% endif %}" class="appointment-form">
                 {% if form %}
                     {{ form.as_p }}
                 {% else %}
-                    <p>Formulario no disponible.</p>
+                    <p class="empty-state">Formulario no disponible.</p>
                 {% endif %}
-                <button type="submit">Buscar Disponibilidad para Nueva Selección</button>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Buscar Disponibilidad para Nueva Selección</button>
+                </div>
             </form>
         </div>
 
         <div class="availability-section">
             <h2>Horarios Disponibles para la Nueva Selección</h2>
             {% if slots_disponibles %}
-                <p>Por favor, seleccione un nuevo horario para la cita del paciente <strong>{{ cita_actual.paciente.user_account.get_full_name|default:'' }}</strong> con el profesional <strong>{{ profesional_seleccionado_para_slots.user_account.get_full_name|default:'' }}</strong> el <strong>{{ fecha_seleccionada_para_slots|date:"l, d \\d\\e F \\d\\e Y" }}</strong>:</p>
+                <p class="info-text">Por favor, seleccione un nuevo horario para la cita del paciente <strong>{{ cita_actual.paciente.user_account.get_full_name|default:'' }}</strong> con el profesional <strong>{{ profesional_seleccionado_para_slots.user_account.get_full_name|default:'' }}</strong> el <strong>{{ fecha_seleccionada_para_slots|date:"l, d \\d\\e F \\d\\e Y" }}</strong>:</p>
                 
-                <ul class="slots-disponibles">
+                <ul class="slots-list">
                     {% for slot_inicio, slot_fin in slots_disponibles %}
                         <li>
-                            {# CAMBIO: Los slots ahora son ENLACES a la página de confirmación, sin JS onsubmit #}
                             <a href="{% if cita_actual and profesional_seleccionado_para_slots and fecha_seleccionada_para_slots %}{% url 'agendamiento:confirmar_modificacion_cita' cita_id=cita_actual.id %}?profesional_id={{ profesional_seleccionado_para_slots.id }}&fecha_cita={{ fecha_seleccionada_para_slots|date:'Y-m-d' }}&hora_cita={{ slot_inicio|time:'H:i' }}{% else %}#{% endif %}" class="slot-link">
                                 {{ slot_inicio|time:'H:i' }} - {{ slot_fin|time:'H:i' }}
                             </a>
@@ -169,11 +70,14 @@
                     {% endfor %}
                 </ul>
             {% elif request.GET.profesional and request.GET.fecha_cita %} 
-                <p class="no-slots">No hay horarios disponibles para el profesional y la fecha seleccionados.</p>
+                <div class="empty-state">
+                    <p>No hay horarios disponibles para el profesional y la fecha seleccionados.</p>
+                </div>
             {% else %}
-                 <p class="no-slots">Seleccione un profesional y una fecha y haga clic en "Buscar Disponibilidad..." para ver los horarios.</p>
+                <div class="empty-state">
+                    <p>Seleccione un profesional y una fecha y haga clic en "Buscar Disponibilidad..." para ver los horarios.</p>
+                </div>
             {% endif %}
         </div>
     </div>
-</body>
-</html>
+{% endblock %}

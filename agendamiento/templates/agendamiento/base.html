@@ -1,0 +1,81 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Citas - Medical Integral{% endblock %}</title>
+    
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="{% static 'agendamiento/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'agendamiento/css/components.css' %}">
+      <!-- CSS adicional por página -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <!-- Header Principal -->
+    <header class="main-header">
+        <!-- Nivel Superior: Logo y navegación principal -->
+        <div class="header-top">
+            <div class="header-container">
+                <div class="logo-section">
+                    <img src="{% static 'agendamiento/images/logo.png' %}" alt="Medical Integral" class="logo">
+                    <span class="logo-text">Medical Integral</span>
+                </div>
+                  <div class="user-section">
+                    {% if user.is_authenticated %}
+                        <span class="user-name">Hola, {{ user.get_full_name|default:user.username }}</span>
+                        <a href="{% url 'agendamiento:password_change' %}" class="btn-header">Cambiar Contraseña</a>
+                        <form method="post" action="{% url 'agendamiento:logout' %}" class="logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-header btn-logout">Cerrar Sesión</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Nivel Inferior: Navegación contextual -->
+        {% if user.is_authenticated %}
+        <div class="header-bottom">
+            <div class="header-container">
+                <nav class="main-nav">
+                    {% block navigation %}
+                    <!-- Navegación específica por rol se define en cada página -->
+                    {% endblock %}
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        <!-- Mensajes del sistema -->
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+            <div class="message message-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Contenido específico de cada página -->
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-container">
+            <p>&copy; 2025 Medical Integral - Sistema de Agendamiento de Citas</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript base -->
+    <script src="{% static 'agendamiento/js/main.js' %}"></script>
+    
+    <!-- JavaScript adicional por página -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
