@@ -11,17 +11,7 @@
 {% endblock %}
 
 {% block content %}
-    <div class="citas-gestionadas-container">        {% if messages %}
-            <div class="messages">
-                {% for message in messages %}
-                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
-                    {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
-        <h1>{{ titulo_pagina }}</h1>
+    <div class="citas-gestionadas-container">        <h1>{{ titulo_pagina }}</h1>
 
         <form method="get" action="" class="filter-form">
             <div class="row">

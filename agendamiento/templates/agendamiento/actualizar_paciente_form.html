@@ -15,13 +15,7 @@
 <div class="form-asesor-container">
     <h1>{{ titulo_pagina|default:"Actualizar Datos del Paciente" }}</h1>
 
-    {% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}    <form method="post" novalidate> {# La action se omite, se enviará a la misma URL #}
+    <form method="post" novalidate> {# La action se omite, se enviará a la misma URL #}
         {% csrf_token %}
         
         <div class="form-section">

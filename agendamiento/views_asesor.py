@@ -46,8 +46,6 @@ def registrar_paciente(request):
             new_paciente.save()
             messages.success(request, f'¡Paciente {new_user.get_full_name()} registrado exitosamente!')
             return redirect('agendamiento:dashboard_asesor')
-        else:
-            messages.error(request, 'Por favor corrige los errores en el formulario.')
     else:
         user_form = UserForm(prefix='user')
         paciente_form = PacienteForm(prefix='paciente')
@@ -77,8 +75,6 @@ def actualizar_paciente(request, paciente_id):
             paciente_form.save()
             messages.success(request, f'¡Datos del paciente {usuario_a_actualizar.get_full_name() or usuario_a_actualizar.username} actualizados exitosamente!')
             return redirect('agendamiento:listar_pacientes')
-        else:
-            messages.error(request, 'Por favor corrige los errores en el formulario.')
     else:
         user_form = UserUpdateForm(instance=usuario_a_actualizar, prefix='user')
         paciente_form = PacienteForm(instance=paciente_a_actualizar, prefix='paciente')
@@ -193,6 +189,26 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
             try:
                 paciente_seleccionado = Paciente.objects.get(id=paciente_id_confirmado)
                 especialidad_cita_propuesta = profesional.especialidad
+
+                # VALIDACIÓN: Verificar conflicto de horario (misma fecha y hora, cualquier especialidad)
+                cita_conflicto_horario = Cita.objects.filter(
+                    paciente=paciente_seleccionado,
+                    fecha_hora_inicio_cita=fecha_hora_inicio_cita_aware,
+                    estado_cita='Programada'
+                ).first()
+
+                if cita_conflicto_horario:
+                    fecha_hora_conflicto_local = timezone.localtime(cita_conflicto_horario.fecha_hora_inicio_cita)
+                    de_str = _('de')
+                    dia_sem_str = formats.date_format(fecha_hora_conflicto_local, "l")
+                    dia_num_str = formats.date_format(fecha_hora_conflicto_local, "d")
+                    mes_str = formats.date_format(fecha_hora_conflicto_local, "F")
+                    anho_str = formats.date_format(fecha_hora_conflicto_local, "Y")
+                    hora_str = fecha_hora_conflicto_local.strftime('%H:%M')
+                    fecha_conflicto_formato = f"{dia_sem_str}, {dia_num_str} {de_str} {mes_str} {de_str} {anho_str}, {hora_str}"
+                    
+                    messages.error(request, f"El paciente {paciente_seleccionado.user_account.get_full_name()} ya tiene una cita programada el {fecha_conflicto_formato} para {cita_conflicto_horario.profesional.especialidad.nombre_especialidad} con Dr(a). {cita_conflicto_horario.profesional.user_account.get_full_name()}. No se pueden agendar dos citas a la misma hora.")
+                    return redirect('agendamiento:consultar_disponibilidad')
 
                 # VALIDACIÓN: Paciente no debe tener otra cita 'Programada' para la misma especialidad
                 cita_existente_programada = Cita.objects.filter(

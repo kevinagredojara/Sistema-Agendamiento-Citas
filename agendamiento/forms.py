@@ -122,6 +122,8 @@ class PacienteForm(forms.ModelForm):
         if fecha_nacimiento:
             if fecha_nacimiento > timezone.localdate(): 
                 raise forms.ValidationError("La fecha de nacimiento no puede ser una fecha futura.")
+            if fecha_nacimiento.year < 1900:
+                raise forms.ValidationError("La fecha de nacimiento no puede ser anterior al año 1900.")
         return fecha_nacimiento
 
 class UserUpdateForm(forms.ModelForm):
