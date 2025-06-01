@@ -15,6 +15,11 @@ class SessionSecurityMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Excluir rutas del admin de Django para superusuarios
+        if request.path.startswith('/admin/') and request.user.is_authenticated and request.user.is_superuser:
+            response = self.get_response(request)
+            return response
+        
         # Verificar si el usuario está autenticado
         if request.user.is_authenticated:
             # Verificar si la sesión ha expirado por inactividad
@@ -80,6 +85,11 @@ class SessionIntegrityMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Excluir rutas del admin de Django para superusuarios
+        if request.path.startswith('/admin/') and request.user.is_authenticated and request.user.is_superuser:
+            response = self.get_response(request)
+            return response
+        
         # Verificar integridad de la sesión antes de procesar la request
         if request.user.is_authenticated:
             if not self.verify_session_integrity(request):
@@ -104,9 +114,9 @@ class SessionIntegrityMiddleware:
             # Verificar que el usuario sigue activo
             if not user.is_active:
                 return False
-            
-            # Verificar que el usuario sigue teniendo un perfil válido
+              # Verificar que el usuario sigue teniendo un perfil válido
             has_profile = (
+                user.is_superuser or  # Permitir acceso a superusuarios/administradores
                 hasattr(user, 'asesor_perfil') or 
                 hasattr(user, 'profesional_perfil') or 
                 hasattr(user, 'paciente_perfil')
