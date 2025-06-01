@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.utils.translation import gettext_lazy as _ # Para mensajes de validación
+from django.utils.translation import gettext_lazy as _
+from datetime import date# Para mensajes de validación
 
 class Especialidad(models.Model):
     nombre_especialidad = models.CharField(
@@ -32,7 +33,7 @@ class Paciente(models.Model):
         ('RC', 'Registro Civil'),
         ('CE', 'Cédula de Extranjería'),
         ('PA', 'Pasaporte'),
-    ]
+        ]
     # Django crea un 'id' AutoField como PK por defecto si no se especifica otro.
     user_account = models.OneToOneField(
         User,
@@ -57,6 +58,16 @@ class Paciente(models.Model):
         max_length=20,
         verbose_name="Teléfono de Contacto"
     )
+
+    @property
+    def edad(self):
+        """Calcula la edad del paciente basada en su fecha de nacimiento"""
+        if self.fecha_nacimiento:
+            today = date.today()
+            return today.year - self.fecha_nacimiento.year - (
+                (today.month, today.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day)
+            )
+        return None
 
     def __str__(self):
         # Verificar si user_account y sus campos existen para evitar errores si aún no están completos

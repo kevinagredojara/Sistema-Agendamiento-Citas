@@ -4,13 +4,17 @@
 
 {% block content %}
     <div class="inicio-container">
-        <h1>¡Bienvenido al Sistema de Agendamiento de Citas!</h1>
-
-        {% if user.is_authenticated %}            <div class="dashboard-welcome">
+        <h1>¡Bienvenido al Sistema de Agendamiento de Citas!</h1>        {% if user.is_authenticated %}            <div class="dashboard-welcome">
                 <p>Hola, {{ user.first_name|default:user.username }}.</p>
             </div>
+              {% if user.is_superuser %}
+                <h2>Panel de Administración:</h2>
+                <ul class="dashboard-links">
+                    <li><a href="/admin/" class="btn btn-danger">🔧 Panel de Administración Django</a></li>
+                    <li><a href="/admin/auth/user/" class="btn btn-warning">👥 Gestionar Usuarios</a></li>
+                </ul>
+            {% endif %}
             
-            <h2>Acceso a su portal:</h2>
             <ul class="dashboard-links">
                 {% if user.asesor_perfil %}
                     <li><a href="{% url 'agendamiento:dashboard_asesor' %}" class="btn btn-primary">Portal Asesor de Servicio</a></li>
@@ -20,12 +24,81 @@
                 {% endif %}                {% if user.paciente_perfil %}
                     <li><a href="{% url 'agendamiento:dashboard_paciente' %}" class="btn btn-success">Portal Paciente</a></li>
                 {% endif %}
+                
+                {% if not user.asesor_perfil and not user.profesional_perfil and not user.paciente_perfil and not user.is_superuser %}
+                    <li class="no-profile-message">
+                        <p>No tienes un perfil asignado en el sistema. Contacta al administrador para que te asigne un rol.</p>
+                    </li>
+                {% endif %}
             </ul>
         {% else %}
             <div class="dashboard-welcome">
                 <p>Para acceder al sistema, por favor inicie sesión.</p>
                 <p><a href="{% url 'agendamiento:login' %}" class="btn btn-primary">Iniciar Sesión</a></p>
-            </div>
-        {% endif %} 
+            </div>        {% endif %} 
     </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.dashboard-links {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.dashboard-links li {
+    margin: 10px 0;
+}
+
+.no-profile-message {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.no-profile-message p {
+    margin: 0;
+    color: #856404;
+    font-style: italic;
+}
+
+/* Estilos específicos para botones de administración */
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+    border-color: #d39e00;
+    color: #212529;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: #fff;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+    color: #fff;
+}
+}
+</style>
 {% endblock %}

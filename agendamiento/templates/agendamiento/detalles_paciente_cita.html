@@ -34,9 +34,11 @@
                 </div>
                 <div class="detail-item">
                     <strong>Número de Documento:</strong> {{ paciente.numero_documento }}
+                </div>                <div class="detail-item">
+                    <strong>Fecha de Nacimiento:</strong> {{ paciente.fecha_nacimiento|date:"d \\d\\e F \\d\\e Y" }}
                 </div>
                 <div class="detail-item">
-                    <strong>Fecha de Nacimiento:</strong> {{ paciente.fecha_nacimiento|date:"d \\d\\e F \\d\\e Y" }}
+                    <strong>Edad:</strong> {% if paciente.edad %}{{ paciente.edad }} años{% else %}No calculada{% endif %}
                 </div>
                 <div class="detail-item">
                     <strong>Teléfono de Contacto:</strong> {{ paciente.telefono_contacto|default:"No especificado" }}
