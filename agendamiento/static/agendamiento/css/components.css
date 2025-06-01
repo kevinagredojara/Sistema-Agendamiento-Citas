@@ -1057,8 +1057,10 @@ textarea:focus {
 /* ===== CONFIRMATION AND SUCCESS COMPONENTS ===== */
 .confirmation-container {
     text-align: center;
-    max-width: 700px;
+    max-width: 600px;
     margin: 20px auto;
+    padding-bottom: 30px;
+    min-height: 300px;
 }
 
 .confirmation-title {
@@ -1080,7 +1082,7 @@ textarea:focus {
 }
 
 .confirmation-actions {
-    margin-top: 30px;
+    margin-top: 40px;
     text-align: center;
 }
 
@@ -1088,6 +1090,48 @@ textarea:focus {
     margin: 0 10px;
     padding: 10px 20px;
     font-size: 1em;
+}
+
+/* Details sections styling for confirmation pages */
+.details-section {
+    background-color: var(--gray-100);
+    padding: 20px;
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.section-title {
+    color: var(--gray-700);
+    font-size: 1.3em;
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--gray-300);
+    padding-bottom: 10px;
+    text-align: center;
+}
+
+.detail-items {
+    margin: 0;
+    text-align: left;
+}
+
+.detail-item {
+    margin: 12px 0;
+    font-size: 1em;
+    line-height: 1.6;
+    text-align: left;
+}
+
+.detail-label {
+    color: var(--secondary-blue);
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.detail-value {
+    color: var(--gray-700);
 }
 
 /* Success page components */
@@ -1172,20 +1216,20 @@ textarea:focus {
     margin: 0 5px;
 }
 
-/* Detail item spacing for confirmation pages */
-.detail-items .detail-item {
+/* Detail item spacing for other confirmation pages (legacy) */
+.legacy-detail-items .detail-item {
     margin: 8px 0;
     font-size: 1em;
     line-height: 1.6;
     text-align: center;
 }
 
-.detail-items .detail-label {
+.legacy-detail-items .detail-label {
     color: var(--secondary-blue);
     font-weight: bold;
 }
 
-.detail-items .detail-value {
+.legacy-detail-items .detail-value {
     color: var(--gray-700);
 }
 
