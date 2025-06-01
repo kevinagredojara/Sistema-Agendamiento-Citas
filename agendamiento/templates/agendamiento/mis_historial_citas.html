@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container">        <h1>{{ titulo_pagina|default:"Mi Historial de Citas" }}</h1>
+    <div class="container" style="max-width: 900px; margin: 0 auto; min-height: 500px; padding-bottom: 50px;">        <h1>{{ titulo_pagina|default:"Mi Historial de Citas" }}</h1>
 
         {% if messages %}
             <div class="messages">
@@ -43,11 +43,14 @@
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>
-        {% else %}
+            </div>        {% else %}
             <div class="empty-state">
                 <p>No tiene citas en su historial.</p>
             </div>
         {% endif %}
+        
+        <div class="back-link-container" style="margin-top: 20px;">
+            <a href="{% url 'agendamiento:dashboard_paciente' %}" class="back-link">Regresar</a>
+        </div>
     </div>
 {% endblock %}
