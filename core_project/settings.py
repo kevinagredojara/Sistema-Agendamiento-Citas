@@ -11,8 +11,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 from django.urls import reverse_lazy
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!!0-8(40=d281g9_(m!9pa51jl$@=bi@r07m7ec7v7u_*bbk=_'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-!!0-8(40=d281g9_(m!9pa51jl$@=bi@r07m7ec7v7u_*bbk=_')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
