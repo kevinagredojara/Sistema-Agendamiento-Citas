@@ -128,7 +128,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -190,3 +191,33 @@ if 'test' in sys.argv or os.environ.get('TESTING'):
     SESSION_SAVE_EVERY_REQUEST = False
     
     print("🧪 CONFIGURACIONES DE TESTING ACTIVADAS")
+
+# ========== CONFIGURACIONES PARA AZURE ==========
+# Configuración para producción en Azure
+if os.getenv('AZURE_DEPLOYMENT'):
+    DEBUG = False
+    
+    # Hosts permitidos para Azure
+    ALLOWED_HOSTS = [
+        'mvpagendamientocitasmedicas.azurewebsites.net',  # Tu dominio de Azure
+        '.azurewebsites.net',  # Permitir subdominios de Azure
+        'localhost',
+        '127.0.0.1',
+    ]
+    
+    # Configuraciones de seguridad para producción
+    SESSION_COOKIE_SECURE = True  # HTTPS obligatorio
+    CSRF_COOKIE_SECURE = True     # HTTPS obligatorio
+    SECURE_SSL_REDIRECT = True    # Redirigir HTTP a HTTPS
+    SECURE_HSTS_SECONDS = 31536000  # HSTS por 1 año
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Configurar archivos estáticos para Azure
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+    
+    print("🚀 CONFIGURACIONES DE AZURE ACTIVADAS")
+else:
+    # Configuraciones de desarrollo local
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    print("💻 CONFIGURACIONES DE DESARROLLO LOCAL ACTIVADAS")
