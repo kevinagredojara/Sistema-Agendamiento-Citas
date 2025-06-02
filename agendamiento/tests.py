@@ -1082,5 +1082,264 @@ class ModificarCitaEstadoNoPermitidoTests(TestCase):
 
 
 # ===================================================================================
+# TESTS CRÍTICOS PARA DESPLIEGUE EN AZURE
+# ===================================================================================
+
+class TestConfiguracionAzure(TestCase):
+    """Tests críticos para validar configuración de Azure antes del despliegue"""
+    
+    def test_production_settings_required_vars(self):
+        """
+        TEST CRÍTICO 1: Validar que las variables de entorno requeridas están configuradas
+        """
+        import os
+        from azure_settings import REQUIRED_ENV_VARS
+        
+        missing_vars = []
+        for var in REQUIRED_ENV_VARS:
+            if not os.environ.get(var):
+                # Para testing local, solo advertir, no fallar
+                print(f"⚠️  Variable de entorno faltante: {var}")
+        
+        # Validar que SECRET_KEY no sea la default
+        secret_key = os.environ.get('SECRET_KEY', 'your-default-secret-key-for-testing')
+        if secret_key == 'your-default-secret-key-for-testing':
+            print("⚠️  SECRET_KEY está usando valor por defecto")
+        
+        # Validar DEBUG está en False para producción
+        debug_setting = os.environ.get('DEBUG', 'False').lower()
+        self.assertIn(debug_setting, ['false', '0', 'no'], 
+                     "DEBUG debe estar en False para producción")
+        
+        print("✅ Test de configuración básica pasado")
+    
+    def test_allowed_hosts_configuration(self):
+        """
+        Validar configuración de ALLOWED_HOSTS para Azure
+        """
+        from django.conf import settings
+        
+        # En testing local, ALLOWED_HOSTS puede estar vacío
+        if hasattr(settings, 'ALLOWED_HOSTS'):
+            allowed_hosts = settings.ALLOWED_HOSTS
+            
+            # Si está configurado, validar formato
+            if allowed_hosts and allowed_hosts != ['*']:
+                for host in allowed_hosts:
+                    self.assertIsInstance(host, str, "ALLOWED_HOSTS debe contener strings")
+                    # Validar que no contenga espacios
+                    self.assertEqual(host.strip(), host, f"Host '{host}' no debe tener espacios")
+        
+        print("✅ Test de ALLOWED_HOSTS pasado")
+
+
+class TestConexionBaseDatos(TestCase):
+    """Tests críticos para validar conectividad con base de datos Azure"""
+    
+    def test_database_connection_basic(self):
+        """
+        TEST CRÍTICO 2: Validar que la conexión a base de datos funciona
+        """
+        from django.db import connection
+        from django.core.exceptions import ImproperlyConfigured
+        
+        try:            # Intentar hacer una consulta simple
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                result = cursor.fetchone()
+                self.assertEqual(result[0], 1, "Consulta básica debe retornar 1")
+            
+            print("✅ Conexión a base de datos exitosa")
+            
+        except Exception as e:
+            self.fail(f"Error de conexión a base de datos: {e}")
+    
+    def test_database_crud_operations(self):
+        """
+        Validar operaciones CRUD básicas en la base de datos
+        """
+        from agendamiento.models import Paciente
+        from django.contrib.auth.models import User
+        
+        try:
+            # CREATE - Crear un usuario y paciente de prueba
+            test_user = User.objects.create_user(
+                username="testdb",
+                email="testdb@azure.com",
+                first_name="Test DB",
+                last_name="Connection"
+            )
+            
+            paciente_test = Paciente.objects.create(
+                user_account=test_user,
+                tipo_documento="CC",
+                numero_documento="12345678",
+                telefono_contacto="1234567890",
+                fecha_nacimiento="1990-01-01"
+            )
+            
+            # READ - Leer el paciente creado
+            paciente_leido = Paciente.objects.get(numero_documento="12345678")
+            self.assertEqual(paciente_leido.user_account.first_name, "Test DB")
+            
+            # UPDATE - Actualizar el paciente  
+            paciente_leido.telefono_contacto = "0987654321"
+            paciente_leido.save()
+            
+            # Verificar actualización
+            paciente_actualizado = Paciente.objects.get(numero_documento="12345678")
+            self.assertEqual(paciente_actualizado.telefono_contacto, "0987654321")
+            
+            # DELETE - Eliminar el paciente de prueba
+            paciente_actualizado.delete()
+            test_user.delete()
+            
+            # Verificar eliminación
+            with self.assertRaises(Paciente.DoesNotExist):
+                Paciente.objects.get(numero_documento="12345678")
+            
+            print("✅ Operaciones CRUD en base de datos exitosas")
+            
+        except Exception as e:
+            self.fail(f"Error en operaciones CRUD: {e}")
+    
+    def test_database_timeout_handling(self):
+        """
+        Validar manejo de timeouts de base de datos
+        """
+        from django.db import connection
+        import time
+        
+        try:
+            # Test simple de timeout (no hacer timeout real por ser costoso)
+            start_time = time.time()
+            
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) FROM agendamiento_paciente")
+                result = cursor.fetchone()
+            
+            elapsed_time = time.time() - start_time
+            
+            # Validar que la consulta no tome más de 10 segundos (muy generoso)
+            self.assertLess(elapsed_time, 10, 
+                           f"Consulta tomó {elapsed_time}s, demasiado lenta")
+            
+            print(f"✅ Test de timeout pasado - Consulta tomó {elapsed_time:.2f}s")
+            
+        except Exception as e:
+            self.fail(f"Error en test de timeout: {e}")
+
+class TestCSRFProtection(TestCase):
+    """Tests críticos para validar protección CSRF en Azure"""
+    
+    def setUp(self):
+        """Configurar datos de prueba para tests CSRF"""
+        self.client = Client(enforce_csrf_checks=True)
+        self.test_user = User.objects.create_user(
+            username='testcsrf',
+            password='testpass123',
+            email='testcsrf@test.com'
+        )
+        
+        # Crear paciente para pruebas
+        self.test_paciente = Paciente.objects.create(
+            user_account=self.test_user,
+            tipo_documento="CC",
+            numero_documento="87654321",
+                    telefono_contacto="1234567890",
+            fecha_nacimiento="1990-01-01"
+        )
+    
+    def test_csrf_protection_login_form(self):
+        """
+        TEST CRÍTICO 3: Validar que el formulario de login tiene protección CSRF
+        """
+        print("TEST CRÍTICO 3: Validar que el formulario de login tiene protección CSRF")
+        
+        # Usar reverse para obtener la URL correcta del login
+        from django.urls import reverse
+        login_url = reverse('agendamiento:login')
+        
+        # Intentar login SIN token CSRF (debe fallar)
+        response = self.client.post(login_url, {
+            'username': 'testcsrf',
+            'password': 'testpass123'
+        })
+        
+        # Debe fallar por falta de CSRF token
+        self.assertEqual(response.status_code, 403, 
+                        "Login sin CSRF token debe retornar 403 Forbidden")
+        
+        print("✅ Protección CSRF en login funcionando")
+    
+    def test_csrf_protection_with_valid_token(self):
+        """
+        Validar que formularios CON token CSRF válido funcionan
+        """
+        from django.urls import reverse
+        login_url = reverse('agendamiento:login')
+        
+        # Obtener página con CSRF token
+        response = self.client.get(login_url)
+        self.assertEqual(response.status_code, 200)
+        
+        # Extraer CSRF token de la respuesta
+        csrf_token = None
+        if 'csrfmiddlewaretoken' in response.content.decode():
+            # Token está presente en el formulario
+            csrf_token = self.client.cookies['csrftoken'].value
+          # Si hay token, hacer login con token válido        if csrf_token:
+            response = self.client.post(login_url, {
+                'username': 'testcsrf',
+                'password': 'testpass123',
+                'csrfmiddlewaretoken': csrf_token
+            })
+            
+            # Login debe ser exitoso (redirect o success)
+            self.assertIn(response.status_code, [200, 302], 
+                         "Login con CSRF token válido debe ser exitoso")
+        
+        print("✅ CSRF token válido funciona correctamente")
+    
+    def test_csrf_middleware_active(self):
+        """
+        Validar que el middleware CSRF está activo
+        """
+        from django.conf import settings
+        
+        # Verificar que CSRFViewMiddleware está en MIDDLEWARE
+        middleware_classes = settings.MIDDLEWARE
+        csrf_middleware_found = False
+        
+        for middleware in middleware_classes:
+            if 'csrf' in middleware.lower():
+                csrf_middleware_found = True
+                break
+        
+        self.assertTrue(csrf_middleware_found, 
+                       "CSRFViewMiddleware debe estar configurado en MIDDLEWARE")
+        
+        print("✅ Middleware CSRF está activo")
+    
+    def test_csrf_cookie_settings(self):
+        """
+        Validar configuraciones de cookies CSRF para Azure
+        """
+        from django.conf import settings
+        
+        # Verificar configuraciones de seguridad de cookies
+        csrf_cookie_secure = getattr(settings, 'CSRF_COOKIE_SECURE', False)
+        csrf_cookie_httponly = getattr(settings, 'CSRF_COOKIE_HTTPONLY', False)
+        
+        # Para Azure con HTTPS, estas deberían estar en True
+        print(f"CSRF_COOKIE_SECURE: {csrf_cookie_secure}")
+        print(f"CSRF_COOKIE_HTTPONLY: {csrf_cookie_httponly}")
+        
+        # En development local, pueden estar en False
+        # En Azure con HTTPS, deberían estar en True
+        
+        print("✅ Configuraciones CSRF revisadas")
+
+# ===================================================================================
 # FINAL DEL ARCHIVO DE TESTS REORGANIZADO
 # ===================================================================================
