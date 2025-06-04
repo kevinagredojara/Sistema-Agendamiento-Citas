@@ -59,7 +59,7 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media/
-static_root/ # Si usas collectstatic para un directorio raíz de estáticos en producción
+staticfiles/ # Si usas collectstatic para un directorio raíz de estáticos en producción
 
 # Visual Studio Code IDE
 .vscode/*
