@@ -1086,51 +1086,78 @@ class ModificarCitaEstadoNoPermitidoTests(TestCase):
 # ===================================================================================
 
 class TestConfiguracionAzure(TestCase):
-    """Tests críticos para validar configuración de Azure antes del despliegue"""
-    
-    def test_production_settings_required_vars(self):
+    """Tests críticos para validar configuración para un entorno tipo Azure."""
+
+    def test_azure_environment_settings_simulation(self):
         """
-        TEST CRÍTICO 1: Validar que las variables de entorno requeridas están configuradas
+        TEST CRÍTICO: Valida configuraciones clave cuando AZURE_DEPLOYMENT está activo.
+        Nota: Este test verifica el comportamiento esperado si las variables de entorno
+        de Azure estuvieran configuradas. En ejecución local, algunas advertencias son normales.
         """
-        import os
-        from azure_settings import REQUIRED_ENV_VARS
-        
-        missing_vars = []
-        for var in REQUIRED_ENV_VARS:
-            if not os.environ.get(var):
-                # Para testing local, solo advertir, no fallar
-                print(f"⚠️  Variable de entorno faltante: {var}")
-        
-        # Validar que SECRET_KEY no sea la default
-        secret_key = os.environ.get('SECRET_KEY', 'your-default-secret-key-for-testing')
-        if secret_key == 'your-default-secret-key-for-testing':
-            print("⚠️  SECRET_KEY está usando valor por defecto")
-        
-        # Validar DEBUG está en False para producción
-        debug_setting = os.environ.get('DEBUG', 'False').lower()
-        self.assertIn(debug_setting, ['false', '0', 'no'], 
-                     "DEBUG debe estar en False para producción")
-        
-        print("✅ Test de configuración básica pasado")
-    
-    def test_allowed_hosts_configuration(self):
-        """
-        Validar configuración de ALLOWED_HOSTS para Azure
-        """
+        print("\n🧪 VALIDANDO CONFIGURACIONES CLAVE ESPERADAS PARA AZURE...")
+
+        # Guardamos el valor original de AZURE_DEPLOYMENT por si estuviera definido
+        original_azure_deployment_env = os.environ.get('AZURE_DEPLOYMENT')
+        # Simulamos que estamos en un entorno Azure seteando la variable
+        os.environ['AZURE_DEPLOYMENT'] = 'True'
+
+        # Forzamos la recarga de settings para que tome el cambio de AZURE_DEPLOYMENT.
+        # ¡Importante! La recarga de settings en Django es compleja y puede tener efectos secundarios.
+        # Una forma más robusta en tests suele ser @override_settings o verificar los
+        # efectos de las variables de entorno en los valores finales de settings.
+        # Sin embargo, para este script de validación, intentaremos un enfoque directo.
+        # Este enfoque de recarga puede no ser ideal para todos los casos de test.
         from django.conf import settings
+        import importlib
+        importlib.reload(settings) # Intenta recargar la configuración
+
+        print(f"   Modo DEBUG (con AZURE_DEPLOYMENT='True'): {settings.DEBUG}")
+        self.assertFalse(settings.DEBUG, "DEBUG debería ser False cuando AZURE_DEPLOYMENT está activo.")
+
+        # Lista de variables de entorno que settings.py esperaría para Azure
+        # (principalmente a través de dj_database_url.config y os.getenv)
+        expected_azure_env_vars = ['DATABASE_URL', 'DJANGO_SECRET_KEY'] # AZURE_DEPLOYMENT ya lo estamos seteando
         
-        # En testing local, ALLOWED_HOSTS puede estar vacío
-        if hasattr(settings, 'ALLOWED_HOSTS'):
-            allowed_hosts = settings.ALLOWED_HOSTS
-            
-            # Si está configurado, validar formato
-            if allowed_hosts and allowed_hosts != ['*']:
-                for host in allowed_hosts:
-                    self.assertIsInstance(host, str, "ALLOWED_HOSTS debe contener strings")
-                    # Validar que no contenga espacios
-                    self.assertEqual(host.strip(), host, f"Host '{host}' no debe tener espacios")
+        missing_vars_for_azure_logic = []
+        print("   Verificando variables de entorno que settings.py usaría para Azure:")
+        for var in expected_azure_env_vars:
+            value = os.getenv(var)
+            if not value:
+                missing_vars_for_azure_logic.append(var)
+                print(f"   ⚠️ Variable de entorno '{var}' NO encontrada (necesaria para la lógica de Azure en settings.py).")
+            else:
+                print(f"   ✅ Variable de entorno '{var}' encontrada.")
         
-        print("✅ Test de ALLOWED_HOSTS pasado")
+        if missing_vars_for_azure_logic:
+            print(f"   INFO: Faltan las siguientes variables para que la lógica de Azure en settings.py funcione completamente: {missing_vars_for_azure_logic}. "
+                  "Asegúrate de que estén configuradas en tu Azure App Service.")
+
+        # Verificar que DJANGO_SECRET_KEY no esté usando el valor de fallback de settings.py
+        # cuando AZURE_DEPLOYMENT está activo (asumiendo que settings.SECRET_KEY se leyó correctamente).
+        fallback_secret_key = 'django-insecure-!!0-8(40=d281g9_(m!9pa51jl$@=bi@r07m7ec7v7u_*bbk=_' # El fallback de tu settings.py
+        if settings.SECRET_KEY == fallback_secret_key:
+            print("   ⚠️ DJANGO_SECRET_KEY en settings.py tiene el valor de fallback. "
+                  "Asegúrate de que la variable de entorno DJANGO_SECRET_KEY esté configurada en Azure.")
+        else:
+            print("   ✅ DJANGO_SECRET_KEY en settings.py no es el valor de fallback (probablemente cargada de entorno).")
+        
+        # Verificar ALLOWED_HOSTS para Azure
+        expected_azure_domain = 'mvp-django-citas2efhxaeb7ba.eastus-01.azurewebsites.net' # Tu dominio real
+        self.assertIn(expected_azure_domain, settings.ALLOWED_HOSTS,
+                      f"El dominio '{expected_azure_domain}' debería estar en ALLOWED_HOSTS cuando AZURE_DEPLOYMENT está activo.")
+        print(f"   ✅ ALLOWED_HOSTS para Azure incluye '{expected_azure_domain}'. Lista: {settings.ALLOWED_HOSTS}")
+
+        # Restaurar el valor original de AZURE_DEPLOYMENT
+        if original_azure_deployment_env is None:
+            if 'AZURE_DEPLOYMENT' in os.environ: # Solo borrar si la seteamos nosotros
+                 del os.environ['AZURE_DEPLOYMENT']
+        else:
+            os.environ['AZURE_DEPLOYMENT'] = original_azure_deployment_env
+        
+        # Recargar settings de nuevo para restaurar al estado original (importante para otros tests)
+        importlib.reload(settings)
+
+        print("✅ Test de configuración para Azure finalizado.")
 
 
 class TestConexionBaseDatos(TestCase):
