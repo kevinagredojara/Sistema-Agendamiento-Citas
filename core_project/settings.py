@@ -209,10 +209,9 @@ if os.getenv('AZURE_DEPLOYMENT'):
     
     # Asegúrate de que este es tu dominio real de Azure App Service
     ALLOWED_HOSTS = [
-        'mvp-django-citas2efhxaeb7ba.eastus-01.azurewebsites.net', 
-        '.azurewebsites.net',
-        # os.getenv('WEBSITE_HOSTNAME') # Alternativa si Azure lo define
-    ]
+    'agendamiento-medical-b4aseea4azdmevfv.eastus2-01.azurewebsites.net', # <--- ¡TU NUEVO DOMINIO REAL AQUÍ!
+    '.azurewebsites.net', # Esto permite subdominios si los usaras, es opcional pero seguro.
+]
     
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
