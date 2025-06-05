@@ -113,7 +113,7 @@ if os.getenv('AZURE_DEPLOYMENT'):
                 'driver': 'ODBC Driver 17 for SQL Server', # O 'ODBC Driver 18 for SQL Server'
                 'encrypt': 'yes',                            # Requerido por Azure SQL Database
                 'trust_server_certificate': 'no',
-                'connection_timeout': '30', # Generalmente se deja como string en OPTIONS para pyodbc
+                'connection_timeout': 30, # INTEGER
             },
         }
     }
