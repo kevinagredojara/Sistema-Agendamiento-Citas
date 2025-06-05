@@ -18,7 +18,6 @@ import os
 from dotenv import load_dotenv
 import sys
 from django.urls import reverse_lazy
-# import dj_database_url # Eliminado ya que no se usará para la configuración de SQL Server
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -50,7 +49,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles', # Whitenoise recomienda estar después de staticfiles si no se usa runserver_nostatic
     'agendamiento.apps.AgendamientoConfig',
-    # 'whitenoise.runserver_nostatic', # Decidimos omitir esto por ahora
 ]
 
 MIDDLEWARE = [
@@ -94,7 +92,14 @@ if os.getenv('AZURE_DEPLOYMENT'):
     DB_NAME = os.getenv('DB_NAME')
     DB_USER = os.getenv('DB_USER')
     DB_PASSWORD = os.getenv('DB_PASSWORD')
-    DB_PORT = os.getenv('DB_PORT', '1433') # Puerto por defecto de SQL Server
+    
+    # Obtener el puerto como cadena y convertirlo a entero
+    db_port_str = os.getenv('DB_PORT', '1433')
+    try:
+        DB_PORT_INT = int(db_port_str)
+    except ValueError:
+        print(f"⚠️ ADVERTENCIA: El valor de DB_PORT ('{db_port_str}') no es un número válido. Usando 1433 por defecto.")
+        DB_PORT_INT = 1433
 
     DATABASES = {
         'default': {
@@ -103,13 +108,12 @@ if os.getenv('AZURE_DEPLOYMENT'):
             'USER': DB_USER,
             'PASSWORD': DB_PASSWORD,
             'HOST': DB_HOST,
-            'PORT': DB_PORT,
+            'PORT': DB_PORT_INT, # Usar el valor entero del puerto
             'OPTIONS': {
                 'driver': 'ODBC Driver 17 for SQL Server', # O 'ODBC Driver 18 for SQL Server'
-                                                          # Azure App Service Linux suele tener estos drivers.
-                'encrypt': 'yes',                         # Requerido por Azure SQL Database
+                'encrypt': 'yes',                            # Requerido por Azure SQL Database
                 'trust_server_certificate': 'no',
-                'connection_timeout': '30',
+                'connection_timeout': '30', # Generalmente se deja como string en OPTIONS para pyodbc
             },
         }
     }
@@ -188,7 +192,7 @@ X_FRAME_OPTIONS = 'DENY'
 # Test-specific configurations
 if 'test' in sys.argv or os.environ.get('TESTING'):
     DEBUG = True 
-    MIDDLEWARE = [
+    MIDDLEWARE = [ # Middleware simplificado para tests si es necesario
         'django.middleware.security.SecurityMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.middleware.common.CommonMiddleware',
@@ -197,6 +201,10 @@ if 'test' in sys.argv or os.environ.get('TESTING'):
         'django.contrib.messages.middleware.MessageMiddleware',
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
     ]
+    # Eliminar middlewares personalizados para tests si causan problemas o no son necesarios
+    # MIDDLEWARE.remove('agendamiento.middleware.SessionSecurityMiddleware')
+    # MIDDLEWARE.remove('agendamiento.middleware.SessionIntegrityMiddleware')
+    
     SESSION_EXPIRE_AT_BROWSER_CLOSE = False
     SESSION_COOKIE_AGE = 86400
     SESSION_SAVE_EVERY_REQUEST = False
@@ -205,19 +213,22 @@ if 'test' in sys.argv or os.environ.get('TESTING'):
 
 # ========== CONFIGURACIONES PARA AZURE ==========
 if os.getenv('AZURE_DEPLOYMENT'):
-    DEBUG = True
+    DEBUG = False # ¡MUY IMPORTANTE para producción!
     
     # Asegúrate de que este es tu dominio real de Azure App Service
     ALLOWED_HOSTS = [
-    'agendamiento-medical-b4aseea4azdmevfv.eastus2-01.azurewebsites.net', # <--- ¡TU NUEVO DOMINIO REAL AQUÍ!
-    '.azurewebsites.net', # Esto permite subdominios si los usaras, es opcional pero seguro.
-]
+        'agendamiento-medical-b4aseea4azdmevfv.eastus2-01.azurewebsites.net',
+        '.azurewebsites.net', # Permite cualquier subdominio de azurewebsites.net, ajusta si es necesario.
+    ]
     
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = True
+    
+    # Indica a Django que confíe en el encabezado X-Forwarded-Proto que Azure App Service añade.
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_HSTS_SECONDS = 31536000
+    
+    SECURE_HSTS_SECONDS = 31536000  # 1 año
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     
@@ -228,6 +239,13 @@ if os.getenv('AZURE_DEPLOYMENT'):
 
     print("🚀 CONFIGURACIONES DE AZURE ACTIVADAS")
 else:
+    # Asegurarse de que las configuraciones de desarrollo local se activen
+    # solo si no estamos en testing ni en Azure.
     if not ('test' in sys.argv or os.environ.get('TESTING')):
+        DEBUG = True # Ya estaba por defecto, pero reconfirmamos
         ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.102'] # Ajusta tu IP local si es necesario
+        # Para desarrollo local, las cookies seguras no son necesarias y pueden dar problemas sin HTTPS
+        SESSION_COOKIE_SECURE = False 
+        CSRF_COOKIE_SECURE = False
+        SECURE_SSL_REDIRECT = False
         print("💻 CONFIGURACIONES DE DESARROLLO LOCAL ACTIVADAS")
