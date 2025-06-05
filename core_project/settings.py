@@ -213,7 +213,7 @@ if 'test' in sys.argv or os.environ.get('TESTING'):
 
 # ========== CONFIGURACIONES PARA AZURE ==========
 if os.getenv('AZURE_DEPLOYMENT'):
-    DEBUG = True # ¡MUY IMPORTANTE para producción!
+    DEBUG = False # ¡MUY IMPORTANTE para producción!
     
     # Asegúrate de que este es tu dominio real de Azure App Service
     ALLOWED_HOSTS = [
