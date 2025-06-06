@@ -1,10 +1,10 @@
 # Sistema de Agendamiento de Citas Médicas - IPS Medical Integral
-## Proyecto de Grado en Ingeniería de Sistemas
+## Proyecto de Grado en Análisis y Desarrollo de Software
 
 ### Información del Proyecto
-- **Autor**: Kevin [Apellido]
-- **Institución**: [Universidad/Institución Educativa]
-- **Programa**: Ingeniería de Sistemas
+- **Autor**: Kevin Agredo Jara
+- **Institución**: Servicio Nacional de Aprendizaje (SENA) 
+- **Programa**: Tecnología en Análisis y Desarrollo de Software
 - **Tipo**: Proyecto de Grado - MVP (Producto Mínimo Viable)
 - **Cliente**: IPS Medical Integral
 - **Fecha**: Junio 2025
@@ -13,7 +13,7 @@
 
 ## Resumen Ejecutivo
 
-Este documento presenta el desarrollo de un Sistema de Agendamiento de Citas Médicas implementado como Producto Mínimo Viable (MVP) para la IPS Medical Integral. El proyecto constituye mi trabajo de grado en Ingeniería de Sistemas, demostrando la aplicación práctica de metodologías de desarrollo de software, arquitecturas web modernas y mejores prácticas de ingeniería de software.
+Este documento presenta el desarrollo de un Sistema de Agendamiento de Citas Médicas implementado como Producto Mínimo Viable (MVP) para la IPS Medical Integral. El proyecto constituye mi trabajo de grado para optar por el título de Técnologo en Análisis y Desarrollo de Software, demostrando la aplicación práctica de metodologías de desarrollo de software, arquitecturas web modernas y mejores prácticas de ingeniería de software.
 
 ### Objetivo Principal
 Desarrollar una solución tecnológica que optimice la gestión de citas médicas mediante una plataforma web robusta, implementando principios de ingeniería de software, patrones de diseño y metodologías ágiles para crear un sistema escalable y mantenible.
@@ -249,7 +249,7 @@ Servicios Disponibles:
 
 ## Proceso de Desarrollo y Decisiones Técnicas
 
-### Fase 1: Análisis y Diseño (Semanas 1-2)
+### Fase 1: Análisis y Diseño 
 
 #### Actividades Realizadas:
 1. **Levantamiento de Requerimientos**
@@ -267,7 +267,7 @@ Servicios Disponibles:
    - Definición de flujos de usuario
    - Validación con usuarios finales
 
-### Fase 2: Implementación Core (Semanas 3-6)
+### Fase 2: Implementación Core 
 
 #### Hitos Técnicos:
 ```
@@ -300,7 +300,7 @@ def calcular_slots_disponibles(profesional, fecha):
 # Solución: Validación de unicidad a nivel de base de datos + transaction.atomic()
 ```
 
-### Fase 3: Testing y Seguridad (Semanas 7-8)
+### Fase 3: Testing y Seguridad 
 
 #### Estrategia de Testing Implementada:
 ```
@@ -322,7 +322,7 @@ Testing Piramidal:
 - **Intermedio**: +6 tests de seguridad y roles
 - **Final**: +9 tests específicos para Azure (26 total)
 
-### Fase 4: Despliegue y Producción (Semanas 9-10)
+### Fase 4: Despliegue y Producción 
 
 #### Configuración de Entornos:
 ```python
@@ -595,7 +595,7 @@ Sistema-Agendamiento-Citas/
 │   ├── management/commands/         # Comandos personalizados para mantenimiento
 │   └── migrations/                  # Migraciones de base de datos versionadas
 ├── staticfiles/                     # Archivos estáticos compilados para producción
-├── documentación/                   # 12+ archivos .md con documentación técnica
+├── documentación/                   # 3 archivos .md con documentación técnica
 ├── requirements.txt                 # 12 dependencias Python especificadas
 ├── Procfile                         # Configuración para Heroku
 ├── startup.sh                       # Script de inicialización para Azure
@@ -645,7 +645,7 @@ def registrar_paciente(request):
 - **Cobertura de Funcionalidad**: 100% de requerimientos implementados
 
 #### Métricas de Proceso:
-- **Tiempo de Desarrollo**: 10 semanas (2.5 meses)
+- **Tiempo de Desarrollo**: 12 semanas (2.9 meses)
 - **Iteraciones Completadas**: 4 sprints de desarrollo
 - **Commits de Git**: 50+ commits documentados
 - **Refactorizaciones Mayores**: 3 reestructuraciones significativas
@@ -738,19 +738,19 @@ def registrar_paciente(request):
 
 ### Roadmap de Mejoras Futuras:
 
-#### Corto Plazo (3-6 meses):
+#### Corto Plazo (1-2 meses):
 - [ ] **API REST**: Desarrollo de API para integración con sistemas externos
 - [ ] **Notificaciones SMS**: Implementación de recordatorios automáticos
 - [ ] **Reportes Avanzados**: Dashboard con métricas de gestión
 - [ ] **Integración Calendario**: Sincronización con Google Calendar/Outlook
 
-#### Mediano Plazo (6-12 meses):
+#### Mediano Plazo (3-6 meses):
 - [ ] **Aplicación Móvil**: App nativa para pacientes
 - [ ] **Sistema de Pagos**: Integración con pasarelas de pago
 - [ ] **Telemedicina**: Funcionalidades de consulta virtual
 - [ ] **IA/ML**: Predicción de no-shows y optimización de horarios
 
-#### Largo Plazo (1-2 años):
+#### Largo Plazo (7-18 meses):
 - [ ] **Microservicios**: Migración a arquitectura de microservicios
 - [ ] **Integración HL7**: Estándares internacionales de salud
 - [ ] **Multi-tenancy**: Soporte para múltiples IPS
@@ -758,9 +758,9 @@ def registrar_paciente(request):
 
 ### Reflexión Final:
 
-Este proyecto representa la culminación exitosa de mis estudios en Ingeniería de Sistemas, demostrando la capacidad de aplicar conocimientos teóricos en la resolución de problemas reales del sector salud. La experiencia adquirida en desarrollo full-stack, arquitectura de software, testing automatizado y despliegue en cloud constituye una base sólida para mi carrera profesional como ingeniero de software.
+Este proyecto representa la culminación exitosa de mis estudios en la Tecnologia en Análisis y Desarrollo de Software, demostrando la capacidad de aplicar conocimientos teóricos en la resolución de problemas reales del sector salud. La experiencia adquirida en desarrollo full-stack, arquitectura de software, testing automatizado y despliegue en cloud constituye una base sólida para mi carrera como Técnologo en Análisis y Desarrollo de Software.
 
-El sistema desarrollado no solo cumple con los objetivos académicos establecidos, sino que proporciona valor real a IPS Medical Integral, estableciendo un precedente para futuras soluciones tecnológicas en el sector médico.
+El sistema desarrollado no solo cumple con los objetivos académicos establecidos, sino que proporciona valor real a una simulación de una IPS, estableciendo un precedente para futuras soluciones tecnológicas en el sector de la salud.
 
 ---
 
@@ -790,5 +790,5 @@ El sistema desarrollado no solo cumple con los objetivos académicos establecido
 
 ---
 
-*Proyecto desarrollado como requisito de grado en Ingeniería de Sistemas*  
-*IPS Medical Integral - Junio 2025*
+*Proyecto desarrollado como requisito de grado en Análisis y Desarrollo de Software*  
+*Junio 2025*

@@ -1,5 +1,0 @@
-[33m35057be[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m  FIX: Agregar configuraciones críticas Azure - Procfile y config
-[33m89a706a[m  CLEANUP: Deshabilitar workflows duplicados - Solo usar workflow automático de Azure
-[33m9a6ff1b[m  TEST: Activar deploy automático GitHub Actions
-[33me1a7924[m  Test deploy automático - Activar GitHub Actions
-[33m1e8f32b[m Resolve merge conflicts and update GitHub Actions workflow

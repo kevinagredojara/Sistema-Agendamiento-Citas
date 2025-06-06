@@ -5,13 +5,12 @@
 
 ---
 
-**Universidad:** [Nombre de la Universidad]  
-**Programa Académico:** Ingeniería de Software / Sistemas de Información  
-**Asignatura:** Desarrollo de Aplicaciones Web / Ingeniería de Software  
-**Semestre:** 2024-2  
-**Autor(es):** [Nombre del Estudiante]  
-**Docente:** [Nombre del Docente]  
-**Fecha de Entrega:** Diciembre 2024  
+**Centro Educativo:** Servicio Nacional de Aprendizaje (SENA)  
+**Programa Académico:** Tecnología en Análisis y Desarrollo de Software 
+**Autor(es):** Kevin Agredo Jara 
+**Instructor:** Nain Zuñiga Porto
+**Ficha:** 2977355
+**Fecha de Entrega:** Noviembre 2025
 
 ---
 
@@ -2427,7 +2426,7 @@ Este proyecto demuestra competencias directamente aplicables en:
 - **Desarrollo Full-Stack**: Experiencia completa en aplicaciones web
 - **DevOps y Deployment**: Conocimiento de ciclo de vida completo
 - **Arquitectura de Software**: Capacidad de diseño de sistemas escalables
-- **Sector Salud**: Comprensión de requerimientos médicos específicos
+- **Sector Salud**: Comprensión de requerimientos y trámites específicos
 
 ---
 
@@ -2757,7 +2756,7 @@ class Command(BaseCommand):
 
 **Firma Digital del Documento**
 - **Hash MD5**: `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6`
-- **Fecha de Generación**: Diciembre 2024
+- **Fecha de Generación**: Junio 2025
 - **Versión del Documento**: 1.0.0
     *   Django proporciona un conjunto de middleware por defecto (seguridad, sesiones, etc.).
     *   Se ha implementado middleware personalizado (ver `agendamiento/middleware.py` y `agendamiento/middleware_new.py`) para lógicas transversales como la gestión avanzada de sesiones o reglas de seguridad específicas del negocio.
