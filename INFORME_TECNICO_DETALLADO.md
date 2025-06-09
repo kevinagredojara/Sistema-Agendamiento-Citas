@@ -5,11 +5,16 @@
 
 ---
 
-**Centro Educativo:** Servicio Nacional de Aprendizaje (SENA)  
+**Centro Educativo:** Servicio Nacional de Aprendizaje (SENA) 
+
 **Programa Académico:** Tecnología en Análisis y Desarrollo de Software 
+
 **Autor(es):** Kevin Agredo Jara 
+
 **Instructor:** Nain Zuñiga Porto
+
 **Ficha:** 2977355
+
 **Fecha de Entrega:** Noviembre 2025
 
 ---
@@ -84,7 +89,7 @@ DATABASES = {
 
 ```
 ┌─────────────────┐    HTTP Request    ┌─────────────────┐
-│     Cliente     │ ──────────────────► │   URL Patterns  │
+│     Cliente     │ ──────────────────►│   URL Patterns  │
 │   (Browser)     │                    │    (urls.py)    │
 └─────────────────┘                    └─────────────────┘
                                                 │
@@ -97,8 +102,8 @@ DATABASES = {
         │                                       ▼
         │ Context Data           ┌─────────────────┐
         └────────────────────────│     Models      │
-                                │   (models.py)   │
-                                └─────────────────┘
+                                 │   (models.py)   │
+                                 └─────────────────┘
                                         │
                                         ▼
                                 ┌─────────────────┐
@@ -129,7 +134,7 @@ El sistema implementa una arquitectura en capas siguiendo los principios de sepa
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    CAPA DE PRESENTACIÓN                      │
+│                    CAPA DE PRESENTACIÓN                     │
 │  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐│
 │  │   Templates     │ │   Static Files  │ │   JavaScript    ││
 │  │   (24 archivos) │ │   (CSS/Images)  │ │   (Frontend)    ││
@@ -252,46 +257,46 @@ class SecurityAndIntegrityMiddleware:
 El diseño de la base de datos sigue los principios de normalización y está optimizado para operaciones CRUD frecuentes en el contexto médico:
 
 ```
-                    ┌─────────────────┐
-                    │      User       │
-                    │  (Django Auth)  │
-                    │─────────────────│
-                    │ id (PK)         │
-                    │ username        │
-                    │ email           │
-                    │ password        │
-                    │ is_active       │
-                    └─────────────────┘
-                           │
-                           │ OneToOne
-                           ▼
-┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
-│   Especialidad  │   │    Paciente     │   │   Profesional   │
-│─────────────────│   │─────────────────│   │─────────────────│
-│ id (PK)         │   │ id (PK)         │   │ id (PK)         │
-│ nombre_esp      │   │ user_account    │   │ user_account    │
-│ duracion_min    │   │ tipo_documento  │   │ numero_licencia │
-│ activa          │   │ numero_doc      │   │ especialidad_id │
-└─────────────────┘   │ fecha_nac       │   │ activo          │
-         │             │ telefono        │   └─────────────────┘
-         │             │ direccion       │            │
-         │             └─────────────────┘            │
-         │                      │                     │
-         │                      │                     │
-         │                      ▼                     │
-         │             ┌─────────────────┐            │
-         └────────────►│      Cita       │◄───────────┘
-                       │─────────────────│
-                       │ id (PK)         │
-                       │ paciente_id (FK)│
-                       │ profesional_id  │
-                       │ especialidad_id │
-                       │ fecha_cita      │
-                       │ hora_cita       │
-                       │ estado          │
-                       │ observaciones   │
-                       │ fecha_creacion  │
-                       └─────────────────┘
+                               ┌─────────────────────────────┐
+                               │      User (Django)          │
+                               │─────────────────────────────│
+                               │ • id (PK)                   │
+                               │ • username (UK)             │
+                               │ • first_name                │
+                               │ • last_name                 │
+                               │ • email                     │
+                               │ • is_active                 │
+                               └─────────────────────────────┘
+                                              │1
+                   ┌──────────────────────────┼──────────────────────────┐
+                   │1                         │1                         │1
+                   ▼                          ▼                          ▼
+    ┌─────────────────────────┐ ┌─────────────────────────┐ ┌─────────────────────────┐       ┌─────────────────────────────┐                                
+    │       Paciente          │ │    AsesorServicio       │ │   ProfesionalSalud      │       │      Especialidad           │                                      
+    │─────────────────────────│ │─────────────────────────│ │─────────────────────────│       │─────────────────────────────│                                
+    │ • id (PK)               │ │ • id (PK)               │ │ • id (PK)               │───────│ • id (PK)                   │                                  
+    │ • tipo_documento        │ └─────────────────────────┘ │ • numero_registro_prof  │N     1│ • nombre_especialidad (UK)  │                                       
+    │ • numero_documento (UK) │             │1              │ • telefono_contacto_prof│       │ • duracion_consulta_minutos │                                       
+    │ • fecha_nacimiento      │             │               └─────────────────────────┘       │ • activa                    │                                      
+    │ • telefono_contacto     │             │                        │1         │1            └─────────────────────────────┘
+    └─────────────────────────┘             │                        │          │  
+                │1                          │                        │          │ 
+                │                           │                        │          │               ┌─────────────────────────┐
+                │                           │                        │          │               │ PlantillaHorarioMedico  │
+                │                           │                        │          │               │─────────────────────────│  
+                │                           │                        │          │               │ • id (PK)               │
+                │                           │                        │          │               │ • dia_semana            │
+                │                           │N                       │          └───────────────│ • hora_inicio_bloque    │
+                │              ┌─────────────────────────┐           │                        N │ • hora_fin_bloque       │
+                │              │         Cita            │           │                          └─────────────────────────┘     
+                │              │─────────────────────────│           │                          
+                └──────────────│ • id (PK)               │───────────┘
+                            N  │ • fecha_hora_inicio_cita│ N
+                               │ • fecha_hora_fin_cita   │
+                               │ • estado_cita           │
+                               └─────────────────────────┘
+
+                                        
 ```
 
 ### 3.2 Implementación de Modelos Django
@@ -688,22 +693,22 @@ El sistema implementa seguridad siguiendo el principio de "defensa en profundida
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                   CAPA DE PRESENTACIÓN                      │
-│  • CSRF Protection (Django)                                │
-│  • XSS Prevention (Template Escaping)                      │
-│  • Content Security Policy Headers                         │
+│  • CSRF Protection (Django)                                 │
+│  • XSS Prevention (Template Escaping)                       │
+│  • Content Security Policy Headers                          │
 └─────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   CAPA DE APLICACIÓN                       │
-│  • Custom Decorators (@paciente_required)                  │
-│  • Form Validation (Server-side)                           │
-│  • Business Logic Validation                               │
+│                   CAPA DE APLICACIÓN                        │
+│  • Custom Decorators (@paciente_required)                   │
+│  • Form Validation (Server-side)                            │
+│  • Business Logic Validation                                │
 └─────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   CAPA DE MIDDLEWARE                       │
+│                   CAPA DE MIDDLEWARE                        │
 │  • SecurityAndIntegrityMiddleware                           │
 │  • Session Validation                                       │
 │  • Suspicious Activity Detection                            │
@@ -711,10 +716,10 @@ El sistema implementa seguridad siguiendo el principio de "defensa en profundida
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   CAPA DE DATOS                            │
+│                   CAPA DE DATOS                             │
 │  • Database Constraints                                     │
-│  • SQL Injection Prevention (ORM)                          │
-│  • Data Encryption at Rest                                 │
+│  • SQL Injection Prevention (ORM)                           │
+│  • Data Encryption at Rest                                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -2797,21 +2802,48 @@ La persistencia de datos es manejada por el ORM de Django, lo que permite flexib
     *   Validadores personalizados: En `agendamiento/validators.py` para reglas de negocio específicas.
 
 *   **Diagrama de Entidad-Relación (Conceptual - ASCII):**
-    ```
-    +-------------+ 1 --- * +-----------+ * --- 1 +--------------+
-    |  Usuario    |         |   Cita    |         | Profesional  |
-    | (User/Perfil|         +-----------+         | (FK Especial)|
-    +-------------+         | FK Paciente |         +------+-------+
-          |                 | FK Profes.  |                | 1
-          | 1               | Fecha, Hora |                V
-          |                 | Estado      |         +--------------+
-          V                 +-----------+         | Especialidad |
-    +-------------+                               +--------------+
-    |  Paciente   |
-    +-------------+
-    ```
-    *(Este es un diagrama simplificado. La estructura real puede ser más compleja y se detalla en `agendamiento/models.py`)*
+```
+                               ┌─────────────────────────────┐
+                               │      User (Django)          │
+                               │─────────────────────────────│
+                               │ • id (PK)                   │
+                               │ • username (UK)             │
+                               │ • first_name                │
+                               │ • last_name                 │
+                               │ • email                     │
+                               │ • is_active                 │
+                               └─────────────────────────────┘
+                                              │1
+                   ┌──────────────────────────┼──────────────────────────┐
+                   │1                         │1                         │1
+                   ▼                          ▼                          ▼
+    ┌─────────────────────────┐ ┌─────────────────────────┐ ┌─────────────────────────┐       ┌─────────────────────────────┐                                
+    │       Paciente          │ │    AsesorServicio       │ │   ProfesionalSalud      │       │      Especialidad           │                                      
+    │─────────────────────────│ │─────────────────────────│ │─────────────────────────│       │─────────────────────────────│                                
+    │ • id (PK)               │ │ • id (PK)               │ │ • id (PK)               │───────│ • id (PK)                   │                                  
+    │ • tipo_documento        │ └─────────────────────────┘ │ • numero_registro_prof  │N     1│ • nombre_especialidad (UK)  │                                       
+    │ • numero_documento (UK) │             │1              │ • telefono_contacto_prof│       │ • duracion_consulta_minutos │                                       
+    │ • fecha_nacimiento      │             │               └─────────────────────────┘       │ • activa                    │                                      
+    │ • telefono_contacto     │             │                        │1         │1            └─────────────────────────────┘
+    └─────────────────────────┘             │                        │          │  
+                │1                          │                        │          │ 
+                │                           │                        │          │               ┌─────────────────────────┐
+                │                           │                        │          │               │ PlantillaHorarioMedico  │
+                │                           │                        │          │               │─────────────────────────│  
+                │                           │                        │          │               │ • id (PK)               │
+                │                           │                        │          │               │ • dia_semana            │
+                │                           │N                       │          └───────────────│ • hora_inicio_bloque    │
+                │              ┌─────────────────────────┐           │                        N │ • hora_fin_bloque       │
+                │              │         Cita            │           │                          └─────────────────────────┘     
+                │              │─────────────────────────│           │                          
+                └──────────────│ • id (PK)               │───────────┘
+                            N  │ • fecha_hora_inicio_cita│ N
+                               │ • fecha_hora_fin_cita   │
+                               │ • estado_cita           │
+                               └─────────────────────────┘
 
+                                        
+```
 ---
 
 ## 4. Análisis de Performance y Benchmarks

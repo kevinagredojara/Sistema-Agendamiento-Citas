@@ -70,28 +70,28 @@ Testing Unitario              Testing Integración      Testing Sistema
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    CAPA DE PRESENTACIÓN                     │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐   │
-│  │  Dashboard  │ │ Formularios │ │   Reportes/Vistas   │   │
-│  │   Usuarios  │ │ Dinámicos   │ │    Responsivas      │   │
-│  └─────────────┘ └─────────────┘ └─────────────────────┘   │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐    │
+│  │  Dashboard  │ │ Formularios │ │   Reportes/Vistas   │    │
+│  │   Usuarios  │ │ Dinámicos   │ │    Responsivas      │    │
+│  └─────────────┘ └─────────────┘ └─────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     CAPA DE NEGOCIO                        │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐   │
-│  │   Gestión   │ │ Validaciones│ │    Middleware       │   │
-│  │    Roles    │ │  Formulario │ │    Seguridad        │   │
-│  └─────────────┘ └─────────────┘ └─────────────────────┘   │
+│                     CAPA DE NEGOCIO                         │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐    │
+│  │   Gestión   │ │ Validaciones│ │    Middleware       │    │
+│  │    Roles    │ │  Formulario │ │    Seguridad        │    │
+│  └─────────────┘ └─────────────┘ └─────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    CAPA DE DATOS                           │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐   │
-│  │    ORM      │ │  Migraciones│ │    Base de Datos    │   │
-│  │   Django    │ │   Automáticas│ │  SQLite/SQL Server  │   │
-│  └─────────────┘ └─────────────┘ └─────────────────────┘   │
+│                    CAPA DE DATOS                            │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐    │
+│  │    ORM      │ │  Migraciones│ │    Base de Datos    │    │
+│  │   Django    │ │  Automáticas│ │  SQLite/SQL Server  │    │
+│  └─────────────┘ └─────────────┘ └─────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -124,28 +124,74 @@ Desarrollo Local          Producción
 ## Modelado de Datos y Diseño
 
 ### Diagrama Entidad-Relación
+
 ```
-    ┌─────────────┐
-    │    User     │
-    │ (Django)    │
-    └──────┬──────┘
-           │ 1:1
-    ┌──────▼──────┐      ┌─────────────────┐
-    │  Paciente   │      │ ProfesionalSalud│
-    └──────┬──────┘      └────────┬────────┘
-           │ 1:N                  │ 1:N
-           │              ┌───────▼──────┐
-           │              │ Especialidad │
-           │              └──────────────┘
-           │                     │ 1:N
-    ┌──────▼──────────────────────▼────────┐
-    │              Cita                    │
-    │ ┌─────────────────────────────────┐  │
-    │ │ - fecha_hora_inicio_cita        │  │
-    │ │ - fecha_hora_fin_cita           │  │
-    │ │ - estado_cita                   │  │
-    │ └─────────────────────────────────┘  │
-    └─────────────────────────────────────┘
+                               ┌─────────────────────────────┐
+                               │      User (Django)          │
+                               │─────────────────────────────│
+                               │ • id (PK)                   │
+                               │ • username (UK)             │
+                               │ • first_name                │
+                               │ • last_name                 │
+                               │ • email                     │
+                               │ • is_active                 │
+                               └─────────────────────────────┘
+                                              │1
+                   ┌──────────────────────────┼──────────────────────────┐
+                   │1                         │1                         │1
+                   ▼                          ▼                          ▼
+    ┌─────────────────────────┐ ┌─────────────────────────┐ ┌─────────────────────────┐       ┌─────────────────────────────┐                                
+    │       Paciente          │ │    AsesorServicio       │ │   ProfesionalSalud      │       │      Especialidad           │                                      
+    │─────────────────────────│ │─────────────────────────│ │─────────────────────────│       │─────────────────────────────│                                
+    │ • id (PK)               │ │ • id (PK)               │ │ • id (PK)               │───────│ • id (PK)                   │                                  
+    │ • tipo_documento        │ └─────────────────────────┘ │ • numero_registro_prof  │N     1│ • nombre_especialidad (UK)  │                                       
+    │ • numero_documento (UK) │             │1              │ • telefono_contacto_prof│       │ • duracion_consulta_minutos │                                       
+    │ • fecha_nacimiento      │             │               └─────────────────────────┘       │ • activa                    │                                      
+    │ • telefono_contacto     │             │                        │1         │1            └─────────────────────────────┘
+    └─────────────────────────┘             │                        │          │  
+                │1                          │                        │          │ 
+                │                           │                        │          │               ┌─────────────────────────┐
+                │                           │                        │          │               │ PlantillaHorarioMedico  │
+                │                           │                        │          │               │─────────────────────────│  
+                │                           │                        │          │               │ • id (PK)               │
+                │                           │                        │          │               │ • dia_semana            │
+                │                           │N                       │          └───────────────│ • hora_inicio_bloque    │
+                │              ┌─────────────────────────┐           │                        N │ • hora_fin_bloque       │
+                │              │         Cita            │           │                          └─────────────────────────┘     
+                │              │─────────────────────────│           │                          
+                └──────────────│ • id (PK)               │───────────┘
+                            N  │ • fecha_hora_inicio_cita│ N
+                               │ • fecha_hora_fin_cita   │
+                               │ • estado_cita           │
+                               └─────────────────────────┘
+
+                                        
+```
+
+    LEYENDA DE RELACIONES:
+    
+    • User ←→ Paciente/ProfesionalSalud/AsesorServicio (1:1)
+      - Cada usuario del sistema tiene exactamente un perfil específico
+    
+    • ProfesionalSalud ←→ Especialidad (N:1)
+      - Varios profesionales pueden pertenecer a una especialidad
+    
+    • ProfesionalSalud ←→ PlantillaHorarioMedico (1:N)
+      - Un profesional puede tener múltiples plantillas de horario
+    
+    • PlantillaHorarioMedico ←→ Cita (N:1)
+      - Las citas se basan en las plantillas de horario disponibles
+    
+    • Paciente ←→ Cita (1:N)
+      - Un paciente puede tener múltiples citas
+    
+    • ProfesionalSalud ←→ Cita (1:N)
+      - Un profesional puede atender múltiples citas
+    
+    • AsesorServicio ←→ Cita (1:N) 
+      - Un asesor puede agendar múltiples citas
+    
+    ═══════════════════════════════════════════════════════════════════════════════════════
 ```
 
 ### Decisiones de Diseño Arquitectónico
