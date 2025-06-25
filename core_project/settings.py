@@ -209,7 +209,6 @@ if 'test' in sys.argv or os.environ.get('TESTING'):
     SESSION_COOKIE_AGE = 86400
     SESSION_SAVE_EVERY_REQUEST = False
     # DATABASES['default'] = {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'} # Opcional para tests más rápidos
-    print("🧪 CONFIGURACIONES DE TESTING ACTIVADAS")
 
 # ========== CONFIGURACIONES PARA AZURE ==========
 if os.getenv('AZURE_DEPLOYMENT'):
