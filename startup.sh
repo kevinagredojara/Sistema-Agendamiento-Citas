@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Salir inmediatamente si un comando falla
 set -o errexit
 
 echo "Running collectstatic..."
@@ -7,6 +6,9 @@ python manage.py collectstatic --no-input
 
 echo "Applying database migrations..."
 python manage.py migrate
+
+echo "Creating initial superuser if it does not exist..."
+python manage.py create_initial_superuser
 
 echo "Starting Gunicorn server..."
 gunicorn core_project.wsgi
