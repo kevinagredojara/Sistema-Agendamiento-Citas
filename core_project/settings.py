@@ -32,13 +32,16 @@ else:
 # --- 2. GESTIÓN DE HOSTS (URLS PERMITIDAS) ---
 ALLOWED_HOSTS = []
 
-# En producción, Render nos da el hostname automáticamente.
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+if IS_PRODUCTION:
+    # Añadir el host de Render
+    RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+    if RENDER_EXTERNAL_HOSTNAME:
+        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# En desarrollo, permitimos los hosts locales.
-if not IS_PRODUCTION:
+    ALLOWED_HOSTS.append('medicalintegral.app')
+    ALLOWED_HOSTS.append('www.medicalintegral.app')
+else:
+    # En desarrollo, permitimos los hosts locales.
     ALLOWED_HOSTS.extend(['localhost', '127.0.0.1'])
 
 
