@@ -1,23 +1,22 @@
 # agendamiento/views_asesor.py
 from django.shortcuts import render, redirect, get_object_or_404
-# from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
-from django.utils import timezone, formats 
-from django.utils.translation import gettext_lazy as _ # Asegúrate que esté importado
-from django.views.decorators.http import require_POST 
+from django.utils import timezone, formats
+from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_POST
 from django.db.models import Q 
 
 from .decorators import asesor_required
 from .forms import (
-    UserForm, PacienteForm, UserUpdateForm, 
+    UserForm, PacienteForm, UserUpdateForm,
     ConsultaDisponibilidadForm, BuscarPacientePorDocumentoForm, CitaFilterForm,
-    ModificarCitaForm 
+    ModificarCitaForm
 )
-from .models import Paciente, ProfesionalSalud, PlantillaHorarioMedico, Cita, Especialidad 
-from datetime import datetime, time, timedelta 
-from django.core.mail import send_mail 
+from .models import Paciente, ProfesionalSalud, PlantillaHorarioMedico, Cita, Especialidad
+from datetime import datetime, time, timedelta
+from django.core.mail import send_mail
 from django.conf import settings
 
 @login_required

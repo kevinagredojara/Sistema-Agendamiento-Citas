@@ -1,18 +1,18 @@
 # agendamiento/views_paciente.py
 from django.shortcuts import render, get_object_or_404, redirect
-# from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.utils import timezone, formats 
+from django.utils import timezone, formats
 from django.utils.translation import gettext_lazy as _
-from django.contrib import messages 
-from django.urls import reverse 
-from django.contrib.auth.models import User 
+from django.contrib import messages
+from django.urls import reverse
+from django.contrib.auth.models import User
 from django.db.models import Q
 
-from .decorators import paciente_required 
-from .models import Cita, Paciente 
-from .forms import PacienteDatosContactoForm 
-from datetime import datetime 
+from .decorators import paciente_required
+from .models import Cita, Paciente
+from .forms import PacienteDatosContactoForm
+from datetime import datetime
+ 
 
 
 @login_required

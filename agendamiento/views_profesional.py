@@ -1,17 +1,15 @@
 # agendamiento/views_profesional.py
 from django.shortcuts import render, get_object_or_404, redirect
-# from django.http import HttpResponse
-from django.urls import reverse 
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
-from django.utils import timezone, formats 
+from django.utils import timezone, formats
 from django.utils.translation import gettext_lazy as _
-from django.contrib import messages 
-from django.views.decorators.http import require_POST 
+from django.contrib import messages
+from django.views.decorators.http import require_POST
 
-from .decorators import profesional_required 
-from .models import Cita, ProfesionalSalud, Paciente 
-from datetime import datetime, time, timedelta 
-
+from .decorators import profesional_required
+from .models import Cita, ProfesionalSalud, Paciente
+from datetime import datetime, time, timedelta
 
 @login_required
 @profesional_required
