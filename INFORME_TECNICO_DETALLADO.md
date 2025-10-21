@@ -60,30 +60,23 @@ La selección del stack tecnológico se basó en criterios académicos y de indu
 - **Justificación Técnica**: ORM robusto, sistema de autenticación integrado, admin panel automático
 - **Ventajas para Desarrollo Médico**: Compliance con estándares de seguridad, validaciones robustas
 
-**Base de Datos Dual (SQLite + SQL Server)**
+**Base de Datos Dual (SQLite + PostgreSQL)**
 ```python
-# Configuración dual de base de datos
+# Configuración dual de base de datos usando dj-database-url
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    } if DEBUG else {
-        'ENGINE': 'mssql',
-        'NAME': os.environ.get('DATABASE_NAME'),
-        'USER': os.environ.get('DATABASE_USER'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
-        'HOST': os.environ.get('DATABASE_HOST'),
-        'PORT': os.environ.get('DATABASE_PORT'),
-        'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',
-        },
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 ```
 
 **Justificación de Arquitectura Dual**:
 - **Desarrollo**: SQLite para prototipado rápido y testing
-- **Producción**: SQL Server para escalabilidad empresarial
+- **Producción**: PostgreSQL para escalabilidad empresarial (configurado vía DATABASE_URL en Render)
 
 ### 1.2 Patrón Arquitectural MVT Aplicado
 
@@ -118,11 +111,11 @@ DATABASES = {
 |------------|------------|---------|---------------|
 | **Backend** | Python | 3.12.3 | Lenguaje moderno, legible, amplia comunidad |
 | **Framework** | Django | 5.0.14 | MVT pattern, ORM, admin panel, seguridad |
-| **Base de Datos** | SQLite/SQL Server | - | Desarrollo ágil / Producción escalable |
+| **Base de Datos** | SQLite/PostgreSQL | - | Desarrollo ágil / Producción escalable |
 | **Frontend** | HTML5/CSS3/JS | - | Estándares web modernos, responsive design |
 | **Servidor Web** | Gunicorn | Latest | WSGI servidor para producción |
 | **Archivos Estáticos** | WhiteNoise | Latest | Servicio eficiente de estáticos |
-| **Despliegue** | Azure App Service | - | PaaS confiable, integración con CI/CD |
+| **Despliegue** | Render | - | PaaS moderno, despliegue automático desde Git |
 
 ---
 
@@ -1700,28 +1693,19 @@ class SecurityTests(MedicalSystemTestCase):
 
 ## 8. DEPLOYMENT Y CONFIGURACIÓN DE PRODUCCIÓN
 
-### 8.1 Configuración de Azure App Service
+### 8.1 Configuración de Render
 
-El sistema está configurado para deployment automático en Azure App Service, siguiendo las mejores prácticas de DevOps:
+El sistema está configurado para deployment automático en Render, siguiendo las mejores prácticas de DevOps:
 
 #### 8.1.1 Script de Startup Automatizado
 ```bash
 #!/bin/bash
-# startup.sh - Script de inicialización para Azure App Service
+# startup.sh - Script de inicialización para Render
 
 echo "=== Iniciando deployment de Sistema de Agendamiento de Citas ==="
 
 # Verificar Python version
 python --version
-
-# Instalar dependencias
-echo "Instalando dependencias..."
-pip install -r requirements.txt
-
-# Verificar instalaciones críticas
-echo "Verificando instalaciones críticas..."
-python -c "import django; print(f'Django version: {django.get_version()}')"
-python -c "import mssql; print('SQL Server driver: OK')"
 
 # Configurar variables de entorno para producción
 export DJANGO_SETTINGS_MODULE=core_project.settings
@@ -1729,19 +1713,11 @@ export DEBUG=False
 
 # Ejecutar migraciones de base de datos
 echo "Ejecutando migraciones de base de datos..."
-python manage.py makemigrations
-python manage.py migrate --run-syncdb
+python manage.py migrate --noinput
 
-# Crear superusuario si no existe
+# Crear superusuario automáticamente (comando personalizado)
 echo "Configurando usuario administrador..."
-python manage.py shell << EOF
-from django.contrib.auth.models import User
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@medicosystem.com', 'AdminPass2024!')
-    print('Superusuario creado exitosamente')
-else:
-    print('Superusuario ya existe')
-EOF
+python manage.py create_initial_superuser
 
 # Recolectar archivos estáticos
 echo "Recolectando archivos estáticos..."
@@ -1751,19 +1727,15 @@ python manage.py collectstatic --noinput
 echo "Limpiando sesiones expiradas..."
 python manage.py clearsessions
 
-# Ejecutar tests críticos
-echo "Ejecutando tests críticos..."
-python manage.py test agendamiento.tests.CriticalSystemTests --verbosity=2
-
 # Verificar integridad del sistema
 echo "Verificando integridad del sistema..."
-python manage.py check --deploy
+python manage.py check
 
 echo "=== Deployment completado exitosamente ==="
 
 # Iniciar servidor Gunicorn
 echo "Iniciando servidor de aplicación..."
-gunicorn --bind=0.0.0.0 --timeout 600 core_project.wsgi:application
+exec gunicorn core_project.wsgi:application
 ```
 
 #### 8.1.2 Configuración de Variables de Entorno
@@ -1772,6 +1744,7 @@ gunicorn --bind=0.0.0.0 --timeout 600 core_project.wsgi:application
 
 import os
 from pathlib import Path
+import dj_database_url
 
 # Configuración base
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -1780,9 +1753,8 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 # Configuración de seguridad para producción
 if not DEBUG:
     ALLOWED_HOSTS = [
-        'sistema-agendamiento-citas.azurewebsites.net',
-        'www.ipsmedicalintegral.com',
-        '*.azurewebsites.net'
+        'sistema-agendamiento-citas.onrender.com',
+        '*.onrender.com'
     ]
     
     # Configuración HTTPS
@@ -1807,171 +1779,51 @@ if not DEBUG:
         'version': 1,
         'disable_existing_loggers': False,
         'formatters': {
-            'azure': {
+            'production': {
                 'format': '[{asctime}] {levelname} {name} {message}',
                 'style': '{',
                 'datefmt': '%Y-%m-%d %H:%M:%S'
             }
         },
         'handlers': {
-            'azure_file': {
-                'level': 'INFO',
-                'class': 'logging.handlers.RotatingFileHandler',
-                'filename': '/home/LogFiles/application.log',
-                'maxBytes': 5*1024*1024,  # 5MB
-                'backupCount': 5,
-                'formatter': 'azure',
-            },
             'console': {
-                'level': 'ERROR',
+                'level': 'INFO',
                 'class': 'logging.StreamHandler',
-                'formatter': 'azure',
+                'formatter': 'production',
             }
         },
         'root': {
-            'handlers': ['azure_file', 'console'],
+            'handlers': ['console'],
             'level': 'INFO',
         },
         'loggers': {
             'django': {
-                'handlers': ['azure_file'],
+                'handlers': ['console'],
                 'level': 'INFO',
                 'propagate': False,
             },
             'agendamiento': {
-                'handlers': ['azure_file'],
-                'level': 'DEBUG',
+                'handlers': ['console'],
+                'level': 'INFO',
                 'propagate': False,
             }
         }
     }
 
-# Base de datos de producción (SQL Server en Azure)
-if not DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'mssql',
-            'NAME': os.environ.get('DATABASE_NAME'),
-            'USER': os.environ.get('DATABASE_USER'),
-            'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
-            'HOST': os.environ.get('DATABASE_HOST'),
-            'PORT': os.environ.get('DATABASE_PORT', '1433'),
-            'OPTIONS': {
-                'driver': 'ODBC Driver 17 for SQL Server',
-                'extra_params': 'TrustServerCertificate=yes'
-            },
-        }
-    }
-else:
-    # SQLite para desarrollo
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+# Base de datos de producción (PostgreSQL configurado automáticamente por DATABASE_URL)
+DATABASES = {
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+# En producción, Render provee DATABASE_URL automáticamente
+# La configuración se maneja mediante dj-database-url en settings.py
 ```
 
-### 8.2 Pipeline de CI/CD
+### 8.2 Monitoreo y Observabilidad
 
-#### 8.2.1 GitHub Actions Workflow
-```yaml
-# .github/workflows/azure-deploy.yml
-name: Deploy to Azure App Service
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-env:
-  AZURE_WEBAPP_NAME: sistema-agendamiento-citas
-  PYTHON_VERSION: '3.12'
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:13
-        env:
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Create and start virtual environment
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-    
-    - name: Install dependencies
-      run: |
-        source venv/bin/activate
-        pip install -r requirements.txt
-    
-    - name: Run tests
-      run: |
-        source venv/bin/activate
-        python manage.py test --verbosity=2
-        
-    - name: Generate coverage report
-      run: |
-        source venv/bin/activate
-        coverage run --source='.' manage.py test agendamiento
-        coverage xml
-        
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Create and start virtual environment
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-    
-    - name: Install dependencies
-      run: |
-        source venv/bin/activate
-        pip install -r requirements.txt
-        
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: .
-```
-
-### 8.3 Monitoreo y Observabilidad
-
-#### 8.3.1 Health Check Endpoints
+#### 8.2.1 Health Check Endpoints
 ```python
 # agendamiento/views_monitoring.py
 from django.http import JsonResponse
@@ -2260,20 +2112,20 @@ class PerformanceBenchmarks(TransactionTestCase):
 
 #### 9.3.1 Índices Estratégicos
 ```sql
--- Índices adicionales para optimización (SQL Server)
+-- Índices adicionales para optimización (PostgreSQL)
 
 -- Índice compuesto para búsquedas frecuentes de citas
-CREATE NONCLUSTERED INDEX IX_Cita_Fecha_Estado_Profesional
+CREATE INDEX idx_cita_fecha_estado_profesional
 ON agendamiento_cita (fecha_cita, estado, profesional_id)
 INCLUDE (hora_cita, paciente_id);
 
 -- Índice para búsquedas de disponibilidad
-CREATE NONCLUSTERED INDEX IX_Cita_Profesional_Fecha_Hora
+CREATE INDEX idx_cita_profesional_fecha_hora
 ON agendamiento_cita (profesional_id, fecha_cita, hora_cita)
 WHERE estado IN ('agendada', 'confirmada');
 
 -- Índice para historial de pacientes
-CREATE NONCLUSTERED INDEX IX_Cita_Paciente_Fecha_DESC
+CREATE INDEX idx_cita_paciente_fecha_desc
 ON agendamiento_cita (paciente_id, fecha_cita DESC)
 INCLUDE (estado, especialidad_id);
 
@@ -2447,15 +2299,15 @@ django-crispy-forms==2.0     # Formularios con mejor styling
 django-widget-tweaks==1.4.12 # Personalización de widgets
 
 # Base de Datos
-django-mssql-backend==2.8.1  # Driver para SQL Server
-pyodbc==4.0.39              # ODBC driver para bases de datos
+psycopg2-binary==2.9.9      # Driver para PostgreSQL
+dj-database-url==2.2.0       # Configuración de BD mediante URL
 
 # Servidor Web y Archivos Estáticos  
 gunicorn==21.2.0            # Servidor WSGI para producción
 whitenoise==6.5.0           # Servicio de archivos estáticos
 
 # Utilidades y Herramientas
-python-decouple==3.8        # Gestión de variables de entorno
+python-dotenv==1.0.0        # Gestión de variables de entorno
 Pillow==10.0.1              # Procesamiento de imágenes
 python-dateutil==2.8.2     # Utilidades para fechas
 
@@ -2510,7 +2362,7 @@ Sistema-Agendamiento-Citas/
 ├── .github/workflows/           # CI/CD GitHub Actions
 ├── requirements.txt             # Dependencias Python
 ├── manage.py                    # Script de gestión Django
-├── startup.sh                   # Script de inicio Azure
+├── startup.sh                   # Script de inicio para Render
 ├── db.sqlite3                   # Base de datos desarrollo
 ├── README.md                    # Documentación principal
 ├── INFORME_TECNICO_DETALLADO.md # Este documento
@@ -2737,15 +2589,15 @@ class Command(BaseCommand):
 #### 11.4.1 Documentación Consultada
 - **Django Documentation**: https://docs.djangoproject.com/
 - **Django Best Practices**: https://django-best-practices.readthedocs.io/
-- **Azure App Service Documentation**: https://docs.microsoft.com/azure/app-service/
-- **SQL Server on Azure**: https://docs.microsoft.com/azure/sql-database/
+- **Render Documentation**: https://render.com/docs
+- **PostgreSQL Documentation**: https://www.postgresql.org/docs/
 
 #### 11.4.2 Herramientas de Desarrollo Utilizadas
 - **IDE**: Visual Studio Code con extensiones Python y Django
 - **Control de Versiones**: Git con GitHub
 - **Testing**: Django TestCase + Coverage.py
-- **Deployment**: Azure App Service + GitHub Actions
-- **Monitoreo**: Azure Application Insights (propuesto)
+- **Deployment**: Render con despliegue automático desde Git
+- **Base de Datos**: PostgreSQL (producción) + SQLite (desarrollo)
 
 #### 11.4.3 Estándares y Convenciones Seguidas
 - **PEP 8**: Style Guide for Python Code
@@ -2767,7 +2619,7 @@ class Command(BaseCommand):
     *   Se ha implementado middleware personalizado (ver `agendamiento/middleware.py` y `agendamiento/middleware_new.py`) para lógicas transversales como la gestión avanzada de sesiones o reglas de seguridad específicas del negocio.
 
 *   **Servicio de Archivos Estáticos:**
-    *   WhiteNoise se utiliza para servir archivos estáticos eficientemente en producción, especialmente en plataformas como Azure App Service.
+    *   WhiteNoise se utiliza para servir archivos estáticos eficientemente en producción, especialmente en plataformas cloud modernas.
 
 ---
 
@@ -2777,7 +2629,7 @@ La persistencia de datos es manejada por el ORM de Django, lo que permite flexib
 
 *   **Motores de Base de Datos:**
     *   **Desarrollo:** SQLite (configurado por defecto para simplicidad y rapidez en el entorno local).
-    *   **Producción:** Microsoft SQL Server (elegido por compatibilidad con la infraestructura existente de IPS Medical Integral y robustez para entornos empresariales en Azure).
+    *   **Producción:** PostgreSQL (base de datos robusta y open-source, configurada automáticamente por Render mediante DATABASE_URL).
 
 *   **ORM (Object-Relational Mapper):**
     *   Se utiliza el ORM de Django para interactuar con la base de datos. Esto abstrae las consultas SQL directas, mejora la portabilidad del código y previene vulnerabilidades de inyección SQL.
@@ -2853,7 +2705,7 @@ La optimización del rendimiento es crucial para la experiencia del usuario y la
 *   **Optimización de Consultas ORM:**
     *   Se han aplicado técnicas como `select_related` y `prefetch_related` para optimizar consultas a la base de datos y mitigar problemas N+1, especialmente en vistas que listan información relacionada (ej. citas con detalles de pacientes y profesionales).
     *   Uso de `QuerySet.defer()` y `QuerySet.only()` cuando solo se necesitan campos específicos.
-    *   Indexación de base de datos: Se recomienda revisar y asegurar que los campos frecuentemente filtrados o unidos en consultas estén debidamente indexados en SQL Server para producción.
+    *   Indexación de base de datos: Se recomienda revisar y asegurar que los campos frecuentemente filtrados o unidos en consultas estén debidamente indexados en PostgreSQL para producción.
 
 *   **Caching:**
     *   **Nivel de Plantillas:** Django ofrece fragment caching para partes de plantillas que no cambian frecuentemente.
@@ -2866,7 +2718,7 @@ La optimización del rendimiento es crucial para la experiencia del usuario y la
     *   Aunque no se disponga de benchmarks formales en este documento, se recomienda realizar pruebas de carga y estrés utilizando herramientas como Locust, Apache JMeter, o k6 para:
         *   Identificar cuellos de botella en vistas específicas.
         *   Medir tiempos de respuesta bajo carga concurrente.
-        *   Evaluar la capacidad del servidor de Azure App Service.
+        *   Evaluar la capacidad del servidor de Render.
     *   **Métricas Clave a Monitorear:**
         *   Tiempo de respuesta promedio y percentiles (p95, p99).
         *   RPS (Requests Per Second) soportadas.
@@ -2949,9 +2801,9 @@ La seguridad es una prioridad, especialmente al manejar datos médicos sensibles
     *   Sesiones seguras con cookies `HttpOnly` y `Secure` (en producción HTTPS).
     *   Comando `clean_expired_sessions` para limpiar sesiones caducadas de la base de datos.
 
-*   **Configuración Segura en Producción (Azure):**
-    *   **HTTPS:** Obligatorio para todo el tráfico. Azure App Service facilita la configuración de SSL/TLS.
-    *   **Variables de Entorno:** `SECRET_KEY`, credenciales de base de datos y otras claves sensibles se gestionan mediante variables de entorno (ver `CONFIGURACION_VARIABLES_ENTORNO.md`), no hardcodeadas.
+*   **Configuración Segura en Producción (Render):**
+    *   **HTTPS:** Obligatorio para todo el tráfico. Render provee SSL/TLS automáticamente.
+    *   **Variables de Entorno:** `SECRET_KEY`, `DATABASE_URL` y otras claves sensibles se gestionan mediante variables de entorno, no hardcodeadas.
     *   `DEBUG = False` en producción.
     *   `ALLOWED_HOSTS` configurado correctamente.
 
@@ -2968,57 +2820,55 @@ La seguridad es una prioridad, especialmente al manejar datos médicos sensibles
 
 *   **Testing de Seguridad:**
     *   Se recomienda realizar pruebas de penetración y análisis de vulnerabilidades periódicas.
-    *   El documento `TESTS_AZURE_RESULTADOS_FINALES.md` y `INFORME_TECNICO_TESTS.md` detallan las pruebas funcionales y de integración, que indirectamente contribuyen a la seguridad al asegurar el comportamiento esperado.
+    *   El documento `INFORME_TECNICO_TESTS.md` detalla las pruebas funcionales y de integración, que indirectamente contribuyen a la seguridad al asegurar el comportamiento esperado.
 
 ---
 
 ## 7. Guía de Deployment y Configuración
 
-El sistema está diseñado para ser desplegado en Azure App Service.
+El sistema está diseñado para ser desplegado en plataformas cloud modernas como Render.
 
 *   **Entorno de Producción:**
-    *   **Plataforma:** Azure App Service (PaaS).
-    *   **Sistema Operativo:** Linux (comúnmente usado para Django en App Service).
+    *   **Plataforma:** Render (PaaS).
+    *   **Sistema Operativo:** Linux (Ubuntu).
     *   **Servidor WSGI:** Gunicorn (especificado en `Procfile`).
-    *   **Base de Datos:** Azure SQL Database (o SQL Server en una VM de Azure).
+    *   **Base de Datos:** PostgreSQL (provisto automáticamente por Render).
 
 *   **Archivos Clave para el Deployment:**
-    *   `requirements.txt`: Lista todas las dependencias de Python. Se genera con `pip freeze > requirements.txt`.
-    *   `Procfile`: Define los comandos que son ejecutados por la plataforma para iniciar la aplicación. Ejemplo: `web: gunicorn core_project.wsgi --workers 4 --timeout 120`
-    *   `startup.sh` (o similar, si es necesario): Script de inicio personalizado para ejecutar comandos antes de iniciar Gunicorn (ej. aplicar migraciones, recolectar archivos estáticos).
+    *   `requirements.txt`: Lista todas las dependencias de Python.
+    *   `Procfile`: Define los comandos que son ejecutados por la plataforma para iniciar la aplicación. Ejemplo: `web: gunicorn core_project.wsgi --log-file -`
+    *   `startup.sh`: Script de inicio personalizado para ejecutar comandos antes de iniciar Gunicorn:
         ```bash
         #!/bin/bash
         # startup.sh
-        python manage.py makemigrations agendamiento
-        python manage.py migrate
+        python manage.py migrate --noinput
         python manage.py collectstatic --noinput
-        # El Procfile se encargará de iniciar Gunicorn
+        python manage.py create_initial_superuser
+        exec gunicorn core_project.wsgi:application
         ```
-        *(Nota: `collectstatic` podría no ser necesario si WhiteNoise está configurado para servir desde los directorios de las apps y `STATIC_ROOT` no se usa de forma tradicional en PaaS, o si se hace en un paso de build.)*
 
-*   **Configuración de Azure App Service:**
-    *   **Configuración de la Aplicación (Variables de Entorno):**
-        *   `DJANGO_SETTINGS_MODULE=core_project.azure_settings` (si se usa un archivo de settings específico para Azure).
-        *   `SECRET_KEY`
-        *   `DATABASE_URL` (o variables individuales para la conexión a SQL Server: `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`).
-        *   `ALLOWED_HOSTS` (dominio de la aplicación en Azure).
+*   **Configuración de Render:**
+    *   **Variables de Entorno:**
+        *   `SECRET_KEY` (clave secreta de Django)
+        *   `DATABASE_URL` (Render lo provee automáticamente)
+        *   `ALLOWED_HOSTS` (dominio .onrender.com)
         *   `DEBUG=False`
-        *   Otras variables específicas de la aplicación.
-        *(Referirse a `CONFIGURACION_VARIABLES_ENTORNO.md` para una guía detallada)*
-    *   **Stack de Runtime:** Python 3.12.
-    *   **Comando de Inicio:** Si `Procfile` no es detectado automáticamente, se puede especificar el comando de Gunicorn.
-    *   **Integración con Repositorio:** Configurar despliegue continuo desde Git (GitHub, Azure Repos, etc.).
+        *   `PYTHON_VERSION=3.12.3`
+    *   **Build Command:** `pip install -r requirements.txt`
+    *   **Start Command:** `bash startup.sh` o usar `Procfile`
+    *   **Integración con Repositorio:** Despliegue automático desde GitHub
 
-*   **Proceso de Deployment (General):**
-    1.  Asegurar que el código esté en un repositorio Git.
-    2.  Configurar el App Service en Azure.
-    3.  Establecer las variables de entorno en la configuración del App Service.
-    4.  Conectar el App Service al repositorio para despliegue continuo o realizar un push manual/CI/CD.
-    5.  Azure App Service leerá `requirements.txt` para instalar dependencias y `Procfile` (o el script de inicio) para ejecutar la aplicación.
+*   **Proceso de Deployment:**
+    1.  Asegurar que el código esté en un repositorio Git (GitHub).
+    2.  Crear un nuevo Web Service en Render.
+    3.  Conectar el repositorio de GitHub.
+    4.  Establecer las variables de entorno en el dashboard de Render.
+    5.  Render instalará automáticamente las dependencias y ejecutará el script de inicio.
 
 *   **Archivos Estáticos con WhiteNoise:**
-    *   Asegurar que WhiteNoise esté en `requirements.txt` y configurado en `settings.py` (en el middleware, usualmente después de `SecurityMiddleware`).
-    *   `STATIC_ROOT` debe estar configurado, y `collectstatic` se ejecuta para reunir todos los archivos estáticos en esta carpeta si WhiteNoise se configura para servir desde `STATIC_ROOT`. Alternativamente, WhiteNoise puede servir directamente desde los directorios `static` de las apps si se configura adecuadamente.
+    *   WhiteNoise está configurado en `settings.py` (en el middleware).
+    *   `collectstatic` se ejecuta automáticamente en el script de inicio.
+    *   Los archivos estáticos se sirven eficientemente desde `STATIC_ROOT`.
 
 ---
 
@@ -3028,12 +2878,12 @@ Guía para diagnosticar problemas comunes y mantener el sistema.
 
 *   **Logging:**
     *   Django tiene un sistema de logging configurable en `settings.py`.
-    *   En Azure App Service, los logs de la aplicación (stdout/stderr) y del servidor web se pueden acceder a través de "Diagnóstico y solución de problemas" -> "Registros de aplicaciones" o "Log stream".
+    *   En plataformas cloud como Render, los logs de la aplicación (stdout/stderr) son accesibles a través del dashboard o mediante CLI.
     *   Configurar niveles de log apropiados (INFO, WARNING, ERROR) para producción.
 
 *   **Problemas Comunes y Soluciones:**
     *   **Errores 5xx (Server Error):**
-        *   Revisar los logs de la aplicación en Azure para trazas de error detalladas.
+        *   Revisar los logs de la aplicación para trazas de error detalladas.
         *   Causas comunes: errores de código, problemas de conexión a la base de datos, configuración incorrecta, agotamiento de recursos.
     *   **Errores 4xx (Client Error):**
         *   `404 Not Found`: Verificar las configuraciones de `urls.py`.
@@ -3041,31 +2891,31 @@ Guía para diagnosticar problemas comunes y mantener el sistema.
         *   `400 Bad Request`: Datos de formulario inválidos.
     *   **Archivos Estáticos No Cargan:**
         *   Verificar la configuración de WhiteNoise.
-        *   Asegurar que `collectstatic` se haya ejecutado correctamente si es necesario.
+        *   Asegurar que `collectstatic` se haya ejecutado correctamente.
         *   Revisar las rutas en las plantillas.
     *   **Problemas de Conexión a Base de Datos:**
-        *   Verificar las variables de entorno de conexión en Azure.
-        *   Asegurar que la base de datos SQL Server esté accesible desde el App Service (reglas de firewall).
+        *   Verificar las variables de entorno (DATABASE_URL).
+        *   Asegurar que la base de datos PostgreSQL esté accesible.
     *   **Rendimiento Lento:**
-        *   Usar Azure Monitor para identificar cuellos de botella de recursos.
+        *   Utilizar herramientas de monitoreo para identificar cuellos de botella.
         *   Analizar consultas lentas (ver sección de Performance).
 
 *   **Debugging en Producción (con extrema cautela):**
     *   **NO activar `DEBUG = True` en producción.**
     *   Utilizar logging extensivo.
-    *   Azure App Service permite la depuración remota para Python en algunos casos, pero debe usarse con precaución.
+    *   Utilizar herramientas de monitoreo y análisis de errores.
 
 *   **Mantenimiento Rutinario:**
-    *   **Actualización de Dependencias:** Revisar y actualizar `requirements.txt` periódicamente para parches de seguridad y nuevas versiones. Probar exhaustivamente después de actualizar.
+    *   **Actualización de Dependencias:** Revisar y actualizar `requirements.txt` periódicamente para parches de seguridad. Probar exhaustivamente después de actualizar.
     *   **Migraciones de Base de Datos:** Aplicar migraciones (`python manage.py migrate`) como parte del proceso de deployment.
-    *   **Limpieza de Sesiones Expiradas:** Ejecutar el comando `python manage.py clean_expired_sessions` periódicamente (se puede automatizar con Azure WebJobs o similar).
-    *   **Backups de Base de Datos:** Azure SQL Database ofrece funcionalidades de backup automatizado. Familiarizarse con las políticas de retención y el proceso de restauración.
-    *   **Monitoreo:** Configurar alertas en Azure Monitor para métricas clave (errores HTTP, uso de CPU/memoria, tiempo de respuesta).
+    *   **Limpieza de Sesiones Expiradas:** Ejecutar el comando `python manage.py clean_expired_sessions` periódicamente (se puede automatizar con tareas programadas).
+    *   **Backups de Base de Datos:** Las plataformas cloud ofrecen funcionalidades de backup automatizado. Familiarizarse con las políticas de retención y el proceso de restauración.
+    *   **Monitoreo:** Configurar alertas de monitoreo para métricas clave (errores HTTP, uso de CPU/memoria, tiempo de respuesta).
 
-*   **Herramientas de Diagnóstico en Azure:**
-    *   **Log stream:** Visualización en tiempo real de los logs.
-    *   **Diagnóstico y solución de problemas:** Herramientas integradas para analizar problemas de rendimiento, configuración, etc.
+*   **Herramientas de Diagnóstico:**
+    *   **Logs en tiempo real:** Visualización mediante dashboard o CLI de la plataforma.
     *   **Métricas:** Gráficos de rendimiento y uso de recursos.
+    *   **Herramientas de terceros:** Sentry, New Relic, o Datadog para análisis avanzado.
 
 ---
 
@@ -3074,21 +2924,21 @@ Guía para diagnosticar problemas comunes y mantener el sistema.
 Estrategias para asegurar que el sistema pueda crecer en términos de usuarios, datos y carga.
 
 *   **Escalabilidad Vertical (Scale Up):**
-    *   Aumentar el plan de servicio de Azure App Service a uno con más CPU, memoria y E/S.
-    *   Aumentar el nivel de servicio de Azure SQL Database.
+    *   Aumentar el plan de servicio de la plataforma cloud a uno con más CPU, memoria y E/S.
+    *   Escalar la base de datos PostgreSQL según las necesidades de carga.
     *   Fácil de implementar, pero tiene límites y puede ser costoso.
 
 *   **Escalabilidad Horizontal (Scale Out):**
-    *   Ejecutar múltiples instancias de la aplicación Django en Azure App Service y usar el balanceador de carga integrado.
-    *   Requiere que la aplicación sea stateless o que el estado de sesión se maneje externamente (ej. base de datos de caché como Redis para sesiones).
+    *   Ejecutar múltiples instancias de la aplicación Django y usar el balanceador de carga integrado de la plataforma.
+    *   Requiere que la aplicación sea stateless o que el estado de sesión se maneje externamente (ej. Redis para sesiones).
     *   Gunicorn con múltiples workers ya proporciona concurrencia dentro de una instancia.
 
 *   **Escalabilidad de Base de Datos:**
-    *   Azure SQL Database ofrece diferentes niveles de rendimiento y opciones como réplicas de lectura para descargar trabajo de la instancia principal.
+    *   PostgreSQL ofrece diferentes opciones de escalamiento y réplicas de lectura para descargar trabajo de la instancia principal.
     *   Optimización de consultas e indexación son cruciales antes de escalar el hardware.
 
 *   **Caching Distribuido:**
-    *   Implementar un sistema de caché distribuido (ej. Azure Cache for Redis) para:
+    *   Implementar un sistema de caché distribuido (ej. Redis) para:
         *   Almacenar resultados de consultas costosas.
         *   Manejo de sesiones (si se escala horizontalmente).
         *   Fragmentos de plantillas cacheados.
@@ -3098,7 +2948,7 @@ Estrategias para asegurar que el sistema pueda crecer en términos de usuarios, 
     *   Esto mejora la responsividad de las vistas web.
 
 *   **Optimización de Contenido Estático y Media:**
-    *   Utilizar una CDN (Content Delivery Network) como Azure CDN para servir archivos estáticos y media, reduciendo la carga en el servidor de la aplicación y mejorando los tiempos de carga para usuarios geográficamente distribuidos.
+    *   Utilizar una CDN (Content Delivery Network) para servir archivos estáticos y media, reduciendo la carga en el servidor de la aplicación y mejorando los tiempos de carga para usuarios geográficamente distribuidos.
 
 *   **Microservicios (Largo Plazo):**
     *   Como se menciona en el README, una migración a una arquitectura de microservicios podría considerarse a largo plazo para módulos muy grandes o que requieran escalabilidad independiente. Esto es un cambio arquitectónico significativo.
@@ -3124,7 +2974,7 @@ Estrategias para asegurar que el sistema pueda crecer en términos de usuarios, 
     *   `Django==5.0.14`: Framework web.
     *   `gunicorn`: Servidor WSGI para producción.
     *   `whitenoise`: Servir archivos estáticos.
-    *   `psycopg2-binary` (si se usara PostgreSQL) o `pyodbc` (para SQL Server).
+    *   `psycopg2-binary` para PostgreSQL (configurado mediante dj-database-url).
     *   `python-dotenv`: Para cargar variables de entorno desde un archivo `.env` en desarrollo.
     *   (Se recomienda listar las dependencias más importantes y sus versiones).
 
@@ -3146,9 +2996,10 @@ Estrategias para asegurar que el sistema pueda crecer en términos de usuarios, 
 *   **D. Referencias Externas:**
     *   [Documentación Oficial de Django](https://docs.djangoproject.com/)
     *   [Documentación de Python](https://docs.python.org/)
-    *   [Documentación de Azure App Service](https://docs.microsoft.com/azure/app-service/)
+    *   [Documentación de Render](https://render.com/docs)
     *   [Documentación de Gunicorn](https://gunicorn.org/)
     *   [Documentación de WhiteNoise](http://whitenoise.evans.io/)
+    *   [Documentación de PostgreSQL](https://www.postgresql.org/docs/)
 
 ---
 Fin del Informe Técnico Detallado.

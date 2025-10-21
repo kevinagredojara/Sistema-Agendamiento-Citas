@@ -90,7 +90,7 @@ Testing Unitario              Testing Integración      Testing Sistema
 │                    CAPA DE DATOS                            │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐    │
 │  │    ORM      │ │  Migraciones│ │    Base de Datos    │    │
-│  │   Django    │ │  Automáticas│ │  SQLite/SQL Server  │    │
+│  │   Django    │ │  Automáticas│ │  SQLite/PostgreSQL  │    │
 │  └─────────────┘ └─────────────┘ └─────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -109,14 +109,14 @@ Testing Unitario              Testing Integración      Testing Sistema
 ```
 Desarrollo Local          Producción
 ┌─────────────┐          ┌─────────────────┐
-│   SQLite    │   -->    │   SQL Server    │
-│   db.sqlite3│          │   (Azure DB)    │
+│   SQLite    │   -->    │   PostgreSQL    │
+│   db.sqlite3│          │  (Render DB)    │
 └─────────────┘          └─────────────────┘
 ```
 
 **Justificación Técnica:**
 - **SQLite**: Simplicidad para desarrollo y testing local
-- **SQL Server**: Robustez empresarial para entorno productivo
+- **PostgreSQL**: Robustez empresarial para entorno productivo en Render
 - **ORM Django**: Abstrae diferencias entre motores de base de datos
 
 ---
@@ -325,21 +325,21 @@ Testing Piramidal:
 #### Evolución de la Suite de Testing:
 - **Inicial**: 17 tests básicos de funcionalidad
 - **Intermedio**: +6 tests de seguridad y roles
-- **Final**: +9 tests específicos para Azure (26 total)
+- **Final**: +3 tests de producción adicionales (26 total)
 
 ### Fase 4: Despliegue y Producción 
 
 #### Configuración de Entornos:
 ```python
 # Patrón implementado: Configuración por ambiente
-if os.getenv('AZURE_DEPLOYMENT'):
-    # Configuración de producción
-    DEBUG = False
-    DATABASES = {'default': azure_sql_config}
-else:
-    # Configuración de desarrollo
-    DEBUG = True  
-    DATABASES = {'default': sqlite_config}
+# Producción: DATABASE_URL se configura automáticamente en Render
+# Desarrollo: SQLite local
+DATABASES = {
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600
+    )
+}
 ```
 
 ---
@@ -397,26 +397,27 @@ Django Development Server (port 8000)
 Archivos estáticos servidos por Django
 ```
 
-### Entorno de Producción (Azure)
+### Entorno de Producción (Render)
 ```
-Internet → Azure Load Balancer → App Service (Gunicorn)
+Internet → Render Load Balancer → Web Service (Gunicorn)
                                       ↓
                                WhiteNoise (Static Files)
                                       ↓
-                               Azure SQL Database
+                               PostgreSQL Database
 ```
 
 #### Configuración de Startup (startup.sh):
 ```bash
-# Script de inicialización optimizado para Azure
+# Script de inicialización para Render
 python manage.py migrate --noinput          # Migraciones automáticas
 python manage.py collectstatic --noinput    # Compilación de assets
+python manage.py create_initial_superuser   # Superusuario automático
 exec gunicorn core_project.wsgi:application # Servidor WSGI
 ```
 
 ### Pipeline de Despliegue
 ```
-Desarrollo Local → Git Repository → Azure App Service
+Desarrollo Local → Git Repository → Render Web Service
        ↓                              ↓
    Testing Local                Variables Entorno
        ↓                              ↓
@@ -457,16 +458,16 @@ Suite de Testing:
 │   ├── test_session_security
 │   ├── test_csrf_protection
 │   └── test_password_validation
-└── Tests Críticos Azure (9 tests)
-    ├── TestConfiguracionAzure (2 tests)
-    ├── TestConexionBaseDatos (3 tests)
-    └── TestCSRFProtection (4 tests)
+└── Tests de Producción (3 tests)
+    ├── test_database_connection
+    ├── test_static_files_serving
+    └── test_environment_variables
 ```
 
 #### Métricas de Calidad:
 - **Cobertura Funcional**: 100% de casos de uso principales
 - **Cobertura de Seguridad**: Tests específicos para vulnerabilidades web
-- **Testing de Producción**: Suite específica para entorno Azure
+- **Testing de Producción**: Suite específica para validación de despliegue
 - **Tiempo de Ejecución**: < 2 segundos para suite completa
 
 ### Herramientas de Testing Utilizadas
@@ -539,31 +540,30 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-### Configuración para Producción (Azure)
+### Configuración para Producción (Render)
 
 #### Variables de Entorno Requeridas:
 ```bash
-# Configuración esencial para Azure App Service
+# Configuración esencial para Render
 DJANGO_SECRET_KEY=<clave_secreta_produccion>
-AZURE_DEPLOYMENT=true
-DEBUG=false
-ALLOWED_HOSTS=<dominio>.azurewebsites.net
+DEBUG=False
+ALLOWED_HOSTS=<tu-aplicacion>.onrender.com
 
-# Base de datos Azure SQL
-DB_HOST=<servidor>.database.windows.net
-DB_NAME=<nombre_base_datos>
-DB_USER=<usuario>@<servidor>
-DB_PASSWORD=<contraseña>
-DB_PORT=1433
+# Base de datos PostgreSQL (Render provee DATABASE_URL automáticamente)
+DATABASE_URL=postgresql://user:password@host:5432/database
+
+# Configuración opcional
+PYTHON_VERSION=3.12.3
 ```
 
-#### Archivo de Configuración Azure (startup.sh):
+#### Archivo de Configuración Render (startup.sh):
 ```bash
 #!/bin/bash
 set -e
-echo "Iniciando despliegue en Azure..."
+echo "Iniciando despliegue en Render..."
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput --clear
+python manage.py create_initial_superuser
 exec gunicorn core_project.wsgi:application \
     --bind "0.0.0.0:$PORT" \
     --workers 2 \
@@ -602,8 +602,8 @@ Sistema-Agendamiento-Citas/
 ├── staticfiles/                     # Archivos estáticos compilados para producción
 ├── documentación/                   # 3 archivos .md con documentación técnica
 ├── requirements.txt                 # 12 dependencias Python especificadas
-├── Procfile                         # Configuración para Heroku
-├── startup.sh                       # Script de inicialización para Azure
+├── Procfile                         # Configuración para Render
+├── startup.sh                       # Script de inicialización para despliegue
 └── manage.py                        # Utilidad de gestión Django
 ```
 
@@ -683,11 +683,11 @@ def registrar_paciente(request):
 - Sistema de autenticación incluido
 - Ecosystem maduro para aplicaciones médicas
 
-#### 2. **Arquitectura de Base de Datos: SQLite vs PostgreSQL vs SQL Server**
-**Decisión**: SQLite (desarrollo) + SQL Server (producción)
+#### 2. **Arquitectura de Base de Datos: SQLite vs PostgreSQL**
+**Decisión**: SQLite (desarrollo) + PostgreSQL (producción)
 **Justificación**:
 - SQLite: Simplicidad para desarrollo local
-- SQL Server: Compatibilidad con infraestructura empresarial existente
+- PostgreSQL: Base de datos robusta, open-source y optimizada para aplicaciones web modernas
 
 #### 3. **Estrategia de Frontend: SPA vs Template Traditional**
 **Decisión**: Templates tradicionales Django
@@ -702,7 +702,7 @@ def registrar_paciente(request):
 1. **Arquitectura de Aplicaciones Web**: Comprensión profunda del patrón MVT
 2. **Seguridad Web**: Implementación de CSRF protection, validación de sesiones
 3. **Testing Automatizado**: Desarrollo de suite de tests comprehensiva
-4. **Deployment en Cloud**: Configuración y despliegue en Azure App Service
+4. **Deployment en Cloud**: Configuración y despliegue en plataformas PaaS (Render)
 5. **Optimización de Performance**: Técnicas de optimización de queries ORM
 
 #### Metodológicos:
@@ -772,17 +772,15 @@ El sistema desarrollado no solo cumple con los objetivos académicos establecido
 ## Recursos y Referencias
 
 ### Documentación Técnica del Proyecto:
-- `TESTS_AZURE_RESULTADOS_FINALES.md` - Resultados exhaustivos de testing
-- `CONFIGURACION_VARIABLES_ENTORNO.md` - Guía de configuración de ambiente
 - `INFORME_TECNICO_TESTS.md` - Análisis detallado de la suite de testing
-- `RESUMEN_FINAL_IMPLEMENTACION.md` - Estado final del proyecto
+- `INFORME_TECNICO_DETALLADO.md` - Documentación técnica completa del sistema
 
 ### Tecnologías y Frameworks Utilizados:
 - **Django 5.0.14**: Framework web principal
 - **Python 3.12.3**: Lenguaje de programación
-- **SQLite/SQL Server**: Sistemas de base de datos
+- **SQLite/PostgreSQL**: Sistemas de base de datos
 - **HTML5/CSS3/JavaScript**: Tecnologías frontend
-- **Azure App Service**: Plataforma de despliegue en cloud
+- **Render**: Plataforma de despliegue en cloud
 - **Gunicorn**: Servidor WSGI para producción
 - **WhiteNoise**: Middleware para archivos estáticos
 
