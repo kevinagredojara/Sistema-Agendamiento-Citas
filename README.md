@@ -125,48 +125,7 @@ Desarrollo Local          Producción
 
 ### Diagrama Entidad-Relación
 
-```
-                               ┌─────────────────────────────┐
-                               │      User (Django)          │
-                               │─────────────────────────────│
-                               │ • id (PK)                   │
-                               │ • username (UK)             │
-                               │ • first_name                │
-                               │ • last_name                 │
-                               │ • email                     │
-                               │ • is_active                 │
-                               └─────────────────────────────┘
-                                              │1
-                   ┌──────────────────────────┼──────────────────────────┐
-                   │1                         │1                         │1
-                   ▼                          ▼                          ▼
-    ┌─────────────────────────┐ ┌─────────────────────────┐ ┌─────────────────────────┐       ┌─────────────────────────────┐                                
-    │       Paciente          │ │    AsesorServicio       │ │   ProfesionalSalud      │       │      Especialidad           │                                      
-    │─────────────────────────│ │─────────────────────────│ │─────────────────────────│       │─────────────────────────────│                                
-    │ • id (PK)               │ │ • id (PK)               │ │ • id (PK)               │───────│ • id (PK)                   │                                  
-    │ • tipo_documento        │ └─────────────────────────┘ │ • numero_registro_prof  │N     1│ • nombre_especialidad (UK)  │                                       
-    │ • numero_documento (UK) │             │1              │ • telefono_contacto_prof│       │ • duracion_consulta_minutos │                                       
-    │ • fecha_nacimiento      │             │               └─────────────────────────┘       │ • activa                    │                                      
-    │ • telefono_contacto     │             │                        │1         │1            └─────────────────────────────┘
-    └─────────────────────────┘             │                        │          │  
-                │1                          │                        │          │ 
-                │                           │                        │          │               ┌─────────────────────────┐
-                │                           │                        │          │               │ PlantillaHorarioMedico  │
-                │                           │                        │          │               │─────────────────────────│  
-                │                           │                        │          │               │ • id (PK)               │
-                │                           │                        │          │               │ • dia_semana            │
-                │                           │N                       │          └───────────────│ • hora_inicio_bloque    │
-                │              ┌─────────────────────────┐           │                        N │ • hora_fin_bloque       │
-                │              │         Cita            │           │                          └─────────────────────────┘     
-                │              │─────────────────────────│           │                          
-                └──────────────│ • id (PK)               │───────────┘
-                            N  │ • fecha_hora_inicio_cita│ N
-                               │ • fecha_hora_fin_cita   │
-                               │ • estado_cita           │
-                               └─────────────────────────┘
 
-                                        
-```
 
     LEYENDA DE RELACIONES:
     
