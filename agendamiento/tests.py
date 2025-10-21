@@ -1085,47 +1085,47 @@ class ModificarCitaEstadoNoPermitidoTests(TestCase):
 
 
 # ===================================================================================
-# TESTS CRÍTICOS PARA DESPLIEGUE EN AZURE
+# TESTS CRÍTICOS PARA DESPLIEGUE EN PRODUCCIÓN
 # ===================================================================================
 
-class TestConfiguracionAzure(TestCase):
-    """Tests críticos para validar configuración para un entorno tipo Azure."""
+class TestConfiguracionProduccion(TestCase):
+    """Tests críticos para validar configuración para un entorno de producción."""
 
-    def test_azure_environment_settings(self): # Nombre simplificado
+    def test_production_environment_settings(self):
         """
-        TEST CRÍTICO: Valida configuraciones clave esperadas en un entorno Azure.
-        Este test verifica los valores que settings DEBERÍA tener si AZURE_DEPLOYMENT
+        TEST CRÍTICO: Valida configuraciones clave esperadas en un entorno de producción.
+        Este test verifica los valores que settings DEBERÍA tener si RENDER
         estuviera activo y las variables de entorno de BD estuvieran configuradas.
         """
-        expected_debug_azure = False
-        expected_allowed_host_azure = 'mvp-django-citas2efhxaeb7ba.eastus-01.azurewebsites.net'
-        expected_db_engine_azure = 'mssql'
+        expected_debug_production = False
+        expected_allowed_host_production = 'sistema-agendamiento-citas.onrender.com'
+        expected_db_engine_production = 'postgresql'
 
         with override_settings(
-            DEBUG=expected_debug_azure,
-            ALLOWED_HOSTS=[expected_allowed_host_azure, '.azurewebsites.net'],
+            DEBUG=expected_debug_production,
+            ALLOWED_HOSTS=[expected_allowed_host_production, '.onrender.com'],
             STATICFILES_STORAGE='whitenoise.storage.CompressedManifestStaticFilesStorage',
             SESSION_COOKIE_SECURE=True,
             CSRF_COOKIE_SECURE=True
         ):
-            self.assertEqual(settings.DEBUG, expected_debug_azure, "DEBUG debería ser False en configuración Azure.")
-            self.assertIn(expected_allowed_host_azure, settings.ALLOWED_HOSTS,
-                          f"El dominio '{expected_allowed_host_azure}' debería estar en ALLOWED_HOSTS para Azure.")
+            self.assertEqual(settings.DEBUG, expected_debug_production, "DEBUG debería ser False en configuración de producción.")
+            self.assertIn(expected_allowed_host_production, settings.ALLOWED_HOSTS,
+                          f"El dominio '{expected_allowed_host_production}' debería estar en ALLOWED_HOSTS para producción.")
             self.assertEqual(settings.STATICFILES_STORAGE, 'whitenoise.storage.CompressedManifestStaticFilesStorage')
-            self.assertTrue(settings.SESSION_COOKIE_SECURE, "SESSION_COOKIE_SECURE debería ser True en Azure.")
-            self.assertTrue(settings.CSRF_COOKIE_SECURE, "CSRF_COOKIE_SECURE debería ser True en Azure.")
+            self.assertTrue(settings.SESSION_COOKIE_SECURE, "SESSION_COOKIE_SECURE debería ser True en producción.")
+            self.assertTrue(settings.CSRF_COOKIE_SECURE, "CSRF_COOKIE_SECURE debería ser True en producción.")
 
-        expected_azure_env_vars = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DJANGO_SECRET_KEY', 'AZURE_DEPLOYMENT']
+        expected_production_env_vars = ['DATABASE_URL', 'DJANGO_SECRET_KEY', 'RENDER']
         
-        for var in expected_azure_env_vars:
+        for var in expected_production_env_vars:
             value = os.getenv(var)
 
         fallback_secret_key = 'django-insecure-!!0-8(40=d281g9_(m!9pa51jl$@=bi@r07m7ec7v7u_*bbk=_'
-        if settings.SECRET_KEY == fallback_secret_key and os.getenv('AZURE_DEPLOYMENT'):
+        if settings.SECRET_KEY == fallback_secret_key and os.getenv('RENDER'):
             pass
 
 class TestConexionBaseDatos(TestCase):
-    """Tests críticos para validar conectividad con base de datos Azure"""
+    """Tests críticos para validar conectividad con base de datos de producción"""
     
     def test_database_connection_basic(self):
         """
@@ -1151,7 +1151,7 @@ class TestConexionBaseDatos(TestCase):
         
         try:
             # CREATE
-            test_user = User.objects.create_user(username="testdb", email="testdb@azure.com", first_name="Test DB", last_name="Connection")
+            test_user = User.objects.create_user(username="testdb", email="testdb@test.com", first_name="Test DB", last_name="Connection")
             paciente_test = Paciente.objects.create(user_account=test_user, tipo_documento="CC", numero_documento="12345678", telefono_contacto="1234567890", fecha_nacimiento="1990-01-01")
             
             # READ
@@ -1190,7 +1190,7 @@ class TestConexionBaseDatos(TestCase):
             self.fail("Error en test de timeout")
 
 class TestCSRFProtection(TestCase):
-    """Tests críticos para validar protección CSRF en Azure"""
+    """Tests críticos para validar protección CSRF en producción"""
     
     def setUp(self):
         """Configurar datos de prueba para tests CSRF"""
@@ -1234,7 +1234,7 @@ class TestCSRFProtection(TestCase):
     
     def test_csrf_cookie_settings(self):
         """
-        Validar configuraciones de cookies CSRF para Azure
+        Validar configuraciones de cookies CSRF para producción
         """
         from django.conf import settings
         csrf_cookie_secure = getattr(settings, 'CSRF_COOKIE_SECURE', False)
