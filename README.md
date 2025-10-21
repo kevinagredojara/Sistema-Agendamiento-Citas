@@ -7,7 +7,7 @@
 - **Programa**: Tecnología en Análisis y Desarrollo de Software
 - **Tipo**: Proyecto de Grado - MVP (Producto Mínimo Viable)
 - **Cliente**: IPS Medical Integral
-- **Fecha**: Junio 2025
+- **Fecha**: Octubre 2025
 
 ---
 
