@@ -1,10 +1,28 @@
-from django.db import models
+"""
+Modelos del Sistema de Agendamiento de Citas.
+
+Define las entidades principales: Especialidad, Paciente, ProfesionalSalud,
+PlantillaHorarioMedico, AsesorServicio y Cita.
+"""
+from datetime import date
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.utils.translation import gettext_lazy as _
-from datetime import date  # Para validación de fechas
+
+
+# ============================================================================
+# CATÁLOGOS Y ESPECIALIDADES
+# ============================================================================
 
 class Especialidad(models.Model):
+    """
+    Especialidades médicas disponibles en el sistema.
+    
+    Cada especialidad tiene una duración estándar de consulta en minutos.
+    """
+
     nombre_especialidad = models.CharField(
         max_length=100,
         unique=True,
@@ -26,19 +44,31 @@ class Especialidad(models.Model):
         verbose_name_plural = "Especialidades Médicas"
         ordering = ['nombre_especialidad']
 
+
+# ============================================================================
+# PERFILES DE USUARIOS
+# ============================================================================
+
 class Paciente(models.Model):
+    """
+    Perfil de paciente del sistema.
+    
+    Vinculado con una cuenta de usuario (User) mediante relación OneToOne.
+    Almacena datos personales y de contacto.
+    """
+
     TIPOS_DOCUMENTO = [
         ('CC', 'Cédula de Ciudadanía'),
         ('TI', 'Tarjeta de Identidad'),
         ('RC', 'Registro Civil'),
         ('CE', 'Cédula de Extranjería'),
         ('PA', 'Pasaporte'),
-        ]
-    # Django crea un 'id' AutoField como PK por defecto si no se especifica otro.
+    ]
+
     user_account = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
-        related_name='paciente_perfil', # Para acceso inverso: User.paciente_perfil
+        related_name='paciente_perfil',
         verbose_name="Cuenta de Usuario"
     )
     tipo_documento = models.CharField(
@@ -61,7 +91,7 @@ class Paciente(models.Model):
 
     @property
     def edad(self):
-        """Calcula la edad del paciente basada en su fecha de nacimiento"""
+        """Calcula la edad del paciente basada en su fecha de nacimiento."""
         if self.fecha_nacimiento:
             today = date.today()
             return today.year - self.fecha_nacimiento.year - (
@@ -70,7 +100,6 @@ class Paciente(models.Model):
         return None
 
     def __str__(self):
-        # Verificar si user_account y sus campos existen para evitar errores si aún no están completos
         if hasattr(self, 'user_account') and self.user_account:
             nombre = self.user_account.first_name or ""
             apellido = self.user_account.last_name or ""
@@ -84,7 +113,13 @@ class Paciente(models.Model):
 
 
 class ProfesionalSalud(models.Model):
-    # Django crea un 'id' AutoField como PK por defecto.
+    """
+    Perfil de profesional de salud del sistema.
+    
+    Vinculado con una cuenta de usuario (User) mediante relación OneToOne.
+    Asociado a una especialidad médica.
+    """
+
     user_account = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
@@ -123,14 +158,54 @@ class ProfesionalSalud(models.Model):
             return f"{nombre_completo} - {especialidad_nombre}"
         elif nombre_completo:
             return nombre_completo
-        return f"Profesional ID {self.id or '(sin ID)'}" # self.id podría no existir antes de guardar
+        return f"Profesional ID {self.id or '(sin ID)'}"
 
     class Meta:
         verbose_name = "Profesional de la Salud"
         verbose_name_plural = "Profesionales de la Salud"
         ordering = ['user_account__last_name', 'user_account__first_name']
 
+
+class AsesorServicio(models.Model):
+    """
+    Perfil de asesor de servicio del sistema.
+    
+    Vinculado con una cuenta de usuario (User) mediante relación OneToOne.
+    Responsable de gestionar citas de pacientes.
+    """
+
+    user_account = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='asesor_perfil',
+        verbose_name="Cuenta de Usuario"
+    )
+
+    def __str__(self):
+        if hasattr(self, 'user_account') and self.user_account:
+            nombre = self.user_account.first_name or ""
+            apellido = self.user_account.last_name or ""
+            return f"Asesor: {nombre} {apellido}".strip()
+        return f"Asesor ID {self.id or '(sin ID)'}"
+
+    class Meta:
+        verbose_name = "Asesor de Servicio"
+        verbose_name_plural = "Asesores de Servicio"
+        ordering = ['user_account__last_name', 'user_account__first_name']
+
+
+# ============================================================================
+# HORARIOS Y CITAS
+# ============================================================================
+
 class PlantillaHorarioMedico(models.Model):
+    """
+    Plantilla de horarios semanales de profesionales de salud.
+    
+    Define bloques de tiempo disponibles por día de la semana.
+    Valida que la hora de fin sea posterior a la hora de inicio.
+    """
+
     DIAS_SEMANA = [
         (0, _('Lunes')),
         (1, _('Martes')),
@@ -140,7 +215,7 @@ class PlantillaHorarioMedico(models.Model):
         (5, _('Sábado')),
         (6, _('Domingo')),
     ]
-    # Django crea un 'id' AutoField como PK por defecto.
+
     profesional = models.ForeignKey(
         ProfesionalSalud,
         on_delete=models.CASCADE,
@@ -162,6 +237,7 @@ class PlantillaHorarioMedico(models.Model):
         return f"{self.profesional} - {self.get_dia_semana_display()} ({self.hora_inicio_bloque.strftime('%H:%M')} - {self.hora_fin_bloque.strftime('%H:%M')})"
 
     def clean(self):
+        """Valida que la hora de fin sea posterior a la hora de inicio."""
         super().clean()
         if self.hora_inicio_bloque and self.hora_fin_bloque:
             if self.hora_fin_bloque <= self.hora_inicio_bloque:
@@ -175,35 +251,22 @@ class PlantillaHorarioMedico(models.Model):
         unique_together = [['profesional', 'dia_semana', 'hora_inicio_bloque']]
         ordering = ['profesional', 'dia_semana', 'hora_inicio_bloque']
 
-class AsesorServicio(models.Model):
-    # Django crea un 'id' AutoField como PK por defecto.
-    user_account = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name='asesor_perfil',
-        verbose_name="Cuenta de Usuario"
-    )
-
-    def __str__(self):
-        if hasattr(self, 'user_account') and self.user_account:
-            nombre = self.user_account.first_name or ""
-            apellido = self.user_account.last_name or ""
-            return f"Asesor: {nombre} {apellido}".strip()
-        return f"Asesor ID {self.id or '(sin ID)'}"
-
-    class Meta:
-        verbose_name = "Asesor de Servicio"
-        verbose_name_plural = "Asesores de Servicio"
-        ordering = ['user_account__last_name', 'user_account__first_name']
 
 class Cita(models.Model):
+    """
+    Cita médica entre paciente y profesional de salud.
+    
+    Gestiona el agendamiento de citas con estados (Programada, Cancelada, Realizada, No Asistió).
+    Valida que la fecha/hora de fin sea posterior a la de inicio.
+    """
+
     ESTADOS_CITA = [
         ('Programada', 'Programada'),
         ('Cancelada', 'Cancelada'),
         ('Realizada', 'Realizada'),
         ('No_Asistio', 'No Asistió'),
     ]
-    # Django crea un 'id' AutoField como PK por defecto.
+
     paciente = models.ForeignKey(
         Paciente,
         on_delete=models.CASCADE,
@@ -241,6 +304,7 @@ class Cita(models.Model):
         return f"Cita para {self.paciente} con {self.profesional} - {self.fecha_hora_inicio_cita.strftime('%d/%m/%Y %H:%M')}"
 
     def clean(self):
+        """Valida que la fecha/hora de fin sea posterior a la de inicio."""
         super().clean()
         if self.fecha_hora_inicio_cita and self.fecha_hora_fin_cita:
             if self.fecha_hora_fin_cita <= self.fecha_hora_inicio_cita:
