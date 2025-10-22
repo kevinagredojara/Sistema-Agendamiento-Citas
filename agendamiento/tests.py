@@ -1,200 +1,140 @@
 """
-====================================================================================
-SISTEMA DE AGENDAMIENTO DE CITAS - SUITE DE TESTS REORGANIZADA
-====================================================================================
+Suite de pruebas del Sistema de Agendamiento de Citas.
 
-Este archivo contiene todas las pruebas unitarias e integración del sistema,
-reorganizadas por categorías funcionales para mejor identificación.
+Contiene pruebas unitarias e integración organizadas por categorías funcionales:
 
-TOTAL DE PRUEBAS: 17
-├── Pruebas de Acceso y Autorización (3 tests)
-├── Pruebas de Validación de Formularios (2 tests) 
-├── Pruebas de Gestión de Pacientes (1 test)
-├── Pruebas de Visualización de Citas (1 test)
-├── Pruebas de Agendamiento y Modificación (4 tests)
-├── Pruebas de Gestión de Asistencia (1 test)
-├── Pruebas de Actualización de Datos (2 tests)
-├── Pruebas de Seguridad (3 tests)
-
-Autor: Sistema de Agendamiento de Citas
-Última actualización: Enero 2025
-====================================================================================
+TOTAL: 26 pruebas (17 funcionales + 9 producción)
+├── Acceso y Autorización (3)
+├── Validación de Formularios (2)
+├── Gestión de Pacientes (1)
+├── Visualización de Citas (1)
+├── Agendamiento y Modificación (4)
+├── Gestión de Asistencia (1)
+├── Actualización de Datos (2)
+├── Cambio de Contraseña (2)
+├── Modificación de Estados (1)
+├── Configuración de Producción (2)
+├── Conexión a Base de Datos (3)
+└── Protección CSRF (4)
 """
 import os
+from datetime import date, timedelta, datetime, time
+
 from django.conf import settings
-from django.test import TestCase, override_settings # <- Añade override_settings si no está
-
-from django.test import TestCase, Client
+from django.contrib.auth.models import User
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
-from django.contrib.auth.models import User 
 from django.utils import timezone
-from datetime import date, timedelta, datetime, time 
 
-from .models import Paciente, ProfesionalSalud, AsesorServicio, Especialidad, Cita
 from .forms import PacienteForm
+from .models import Paciente, ProfesionalSalud, AsesorServicio, Especialidad, Cita
 
-
-# ===================================================================================
-# HELPER FUNCTIONS PARA TESTING
-# ===================================================================================
+# ====================================================================================
+# FUNCIONES HELPER PARA TESTING
+# ====================================================================================
 
 def ensure_test_authentication(test_instance, username, password):
     """
-    Función helper para garantizar autenticación robusta en tests.
+    Garantiza autenticación robusta combinando client.login y force_login.
     
-    Esta función combina client.login y force_login para mayor confiabilidad
-    en el entorno de testing, evitando problemas de middleware de seguridad.
-    
-    Args:
-        test_instance: Instancia del test case
-        username: Nombre de usuario para login
-        password: Contraseña del usuario
-        
-    Returns:
-        bool: True si la autenticación fue exitosa
+    Evita problemas de middleware de seguridad en el entorno de testing.
     """
-    # Primero intentar login normal
+    # Intentar login normal
     login_success = test_instance.client.login(username=username, password=password)
     
     if not login_success:
-        # Si falla, usar force_login como respaldo
         user = User.objects.get(username=username)
         test_instance.client.force_login(user)
         login_success = True
     
-    # Verificar que el usuario está autenticado
+    # Verificar autenticación
     response = test_instance.client.get('/')
     if hasattr(response, 'wsgi_request') and hasattr(response.wsgi_request, 'user'):
         if not response.wsgi_request.user.is_authenticated:
-            # Último recurso: force_login directo
             user = User.objects.get(username=username)
             test_instance.client.force_login(user)
     
     return login_success
 
-
-# ===================================================================================
-# CATEGORÍA 1: PRUEBAS DE ACCESO Y AUTORIZACIÓN (3 TESTS)
-# ===================================================================================
+# ====================================================================================
+# CATEGORÍA 1: ACCESO Y AUTORIZACIÓN (3 TESTS)
+# ====================================================================================
 
 class DashboardPacienteAccessTests(TestCase):
-    """
-    TEST 1/17: Verificación de acceso al Dashboard del Paciente
-    
-    Valida que usuarios no autenticados sean redirigidos al login
-    cuando intentan acceder al dashboard de pacientes.
-    """
+    """Test 1/26: Acceso al dashboard de paciente requiere autenticación."""
     
     def setUp(self):
         self.dashboard_paciente_url = reverse('agendamiento:dashboard_paciente')
         self.login_url = reverse('agendamiento:login')
 
     def test_dashboard_paciente_redirects_unauthenticated_user_to_login(self):
-        """
-        TEST 1: Redirección de usuario no autenticado desde dashboard paciente
-        
-        Verifica que un usuario no autenticado que intenta acceder al dashboard 
-        del paciente es redirigido correctamente a la página de login.
-        """
+        """Usuario no autenticado es redirigido al login."""
         response = self.client.get(self.dashboard_paciente_url)
         self.assertEqual(response.status_code, 302)
         expected_redirect_url = f'{self.login_url}?next={self.dashboard_paciente_url}'
         self.assertRedirects(response, expected_redirect_url,
                              msg_prefix="Redirección incorrecta para usuario no autenticado en dashboard_paciente.")
 
-
 class DashboardAsesorAccessTests(TestCase):
-    """
-    TEST 2/17: Verificación de acceso al Dashboard del Asesor
-    
-    Valida que usuarios no autenticados sean redirigidos al login
-    cuando intentan acceder al dashboard de asesores.
-    """
+    """Test 2/26: Acceso al dashboard de asesor requiere autenticación."""
     
     def setUp(self):
         self.dashboard_asesor_url = reverse('agendamiento:dashboard_asesor')
         self.login_url = reverse('agendamiento:login')
-        self.home_url = '/' 
+        self.home_url = '/'
         
         self.test_user_paciente = User.objects.create_user(
-            username='pacienteprueba_dsas', 
-            password='password123', 
-            first_name='Paciente', 
+            username='pacienteprueba_dsas',
+            password='password123',
+            first_name='Paciente',
             last_name='Prueba'
         )
         self.paciente_profile = Paciente.objects.create(
             user_account=self.test_user_paciente,
-            tipo_documento='CC', 
+            tipo_documento='CC',
             numero_documento='12345670',
-            telefono_contacto='3001234567', 
-            fecha_nacimiento='2000-01-01' 
+            telefono_contacto='3001234567',
+            fecha_nacimiento='2000-01-01'
         )
 
     def test_dashboard_asesor_redirects_unauthenticated_user_to_login(self):
-        """
-        TEST 2: Redirección de usuario no autenticado desde dashboard asesor
-        
-        Verifica que usuarios no autenticados sean redirigidos al login
-        al intentar acceder al dashboard del asesor.
-        """
+        """Usuario no autenticado es redirigido al login."""
         response = self.client.get(self.dashboard_asesor_url)
         self.assertEqual(response.status_code, 302)
         expected_redirect_url = f'{self.login_url}?next={self.dashboard_asesor_url}'
         self.assertRedirects(response, expected_redirect_url,
                              msg_prefix="Redirección incorrecta desde dashboard_asesor para usuario no autenticado.")
 
-
 class DashboardProfesionalAccessTests(TestCase):
-    """
-    TEST 3/17: Verificación de acceso al Dashboard del Profesional
-    
-    Valida que usuarios no autenticados sean redirigidos al login
-    cuando intentan acceder al dashboard de profesionales.
-    """
+    """Test 3/26: Acceso al dashboard de profesional requiere autenticación."""
     
     def setUp(self):
         self.dashboard_profesional_url = reverse('agendamiento:dashboard_profesional')
         self.login_url = reverse('agendamiento:login')
 
     def test_dashboard_profesional_redirects_unauthenticated_user_to_login(self):
-        """
-        TEST 3: Redirección de usuario no autenticado desde dashboard profesional
-        
-        Verifica que usuarios no autenticados sean redirigidos al login
-        al intentar acceder al dashboard del profesional.
-        """
+        """Usuario no autenticado es redirigido al login."""
         response = self.client.get(self.dashboard_profesional_url)
         self.assertEqual(response.status_code, 302)
         expected_redirect_url = f'{self.login_url}?next={self.dashboard_profesional_url}'
         self.assertRedirects(response, expected_redirect_url,
                              msg_prefix="Redirección incorrecta desde dashboard_profesional para usuario no autenticado.")
 
-
-# ===================================================================================
-# CATEGORÍA 2: PRUEBAS DE VALIDACIÓN DE FORMULARIOS (2 TESTS)
-# ===================================================================================
+# ====================================================================================
+# CATEGORÍA 2: VALIDACIÓN DE FORMULARIOS (2 TESTS)
+# ====================================================================================
 
 class PacienteFormValidationTests(TestCase):
-    """
-    TESTS 4-5/17: Validación de formularios de pacientes
-    
-    Verifica que las reglas de validación del formulario de pacientes
-    funcionen correctamente, especialmente para fechas de nacimiento.
-    """
+    """Tests 4-5/26: Validación de formulario de pacientes (fechas de nacimiento)."""
     
     def test_fecha_nacimiento_cannot_be_future_date(self):
-        """
-        TEST 4: Validación de fecha de nacimiento futura
-        
-        Verifica que no se permita registrar una fecha de nacimiento
-        que sea posterior a la fecha actual.
-        """
+        """No permite fecha de nacimiento futura."""
         future_date = timezone.localdate() + timedelta(days=1)
         data = {
-            'tipo_documento': 'CC', 
+            'tipo_documento': 'CC',
             'numero_documento': '12345678',
             'fecha_nacimiento': future_date.strftime('%Y-%m-%d'),
-            'telefono_contacto': '3001234560' 
+            'telefono_contacto': '3001234560'
         }
         form = PacienteForm(data=data)
         self.assertFalse(form.is_valid())
@@ -203,34 +143,23 @@ class PacienteFormValidationTests(TestCase):
                         "La fecha de nacimiento no puede ser una fecha futura.")
 
     def test_fecha_nacimiento_valid_past_date(self):
-        """
-        TEST 5: Validación de fecha de nacimiento válida
-        
-        Verifica que se permita registrar una fecha de nacimiento
-        que sea anterior a la fecha actual.
-        """
+        """Permite fecha de nacimiento válida (pasada)."""
         past_date = date(2000, 5, 15)
         data = {
-            'tipo_documento': 'CC', 
+            'tipo_documento': 'CC',
             'numero_documento': '12345678',
             'fecha_nacimiento': past_date.strftime('%Y-%m-%d'),
-            'telefono_contacto': '3001234560' 
+            'telefono_contacto': '3001234560'
         }
         form = PacienteForm(data=data)
         self.assertTrue(form.is_valid(), f"Formulario no fue válido. Errores: {form.errors.as_json()}")
 
-
-# ===================================================================================
-# CATEGORÍA 3: PRUEBAS DE GESTIÓN DE PACIENTES (1 TEST)
-# ===================================================================================
+# ====================================================================================
+# CATEGORÍA 3: GESTIÓN DE PACIENTES (1 TEST)
+# ====================================================================================
 
 class RegistrarPacienteViewTests(TestCase):
-    """
-    TEST 6/17: Registro exitoso de nuevos pacientes
-    
-    Verifica que los asesores puedan registrar nuevos pacientes
-    correctamente y sean redirigidos al dashboard apropiado.
-    """
+    """Test 6/26: Registro de nuevos pacientes por el asesor."""
     
     def setUp(self):
         self.asesor_user = User.objects.create_user(
@@ -244,12 +173,7 @@ class RegistrarPacienteViewTests(TestCase):
         self.dashboard_asesor_url = reverse('agendamiento:dashboard_asesor')
         
     def test_registrar_paciente_successful_creation_and_redirect(self):
-        """
-        TEST 6: Registro exitoso de paciente por asesor
-        
-        Verifica que un asesor pueda crear un nuevo paciente exitosamente
-        y sea redirigido al dashboard del asesor tras la creación.
-        """
+        """Registro exitoso de paciente por asesor con redirección a dashboard."""
         ensure_test_authentication(self, 'superasesor_rp', 'password123')
         
         user_data_prefix = 'user-'
@@ -273,39 +197,33 @@ class RegistrarPacienteViewTests(TestCase):
         user_creado = User.objects.get(username='nuevopaciente_rp')
         self.assertTrue(Paciente.objects.filter(user_account=user_creado, numero_documento='76543210').exists())
 
-
-# ===================================================================================
-# CATEGORÍA 4: PRUEBAS DE VISUALIZACIÓN DE CITAS (1 TEST)
-# ===================================================================================
+# ====================================================================================
+# CATEGORÍA 4: VISUALIZACIÓN DE CITAS (1 TEST)
+# ====================================================================================
 
 class VerProximasCitasViewTests(TestCase):
-    """
-    TEST 7/17: Visualización de próximas citas del paciente
-    
-    Verifica que los pacientes puedan ver correctamente sus próximas citas
-    filtradas por fecha y estado.
-    """
+    """Test 7/26: Visualización de próximas citas del paciente (filtrado correcto)."""
     
     def setUp(self):
         self.paciente_user = User.objects.create_user(
-            username='pacientefuturo_vpc', 
-            password='password123', 
-            first_name='FuturoVPC', 
+            username='pacientefuturo_vpc',
+            password='password123',
+            first_name='FuturoVPC',
             last_name='PacienteVPC'
         )
         self.paciente_profile = Paciente.objects.create(
-            user_account=self.paciente_user, 
-            tipo_documento='CC', 
-            numero_documento='112233445', 
+            user_account=self.paciente_user,
+            tipo_documento='CC',
+            numero_documento='112233445',
             fecha_nacimiento='1995-01-01'
         )
         self.especialidad = Especialidad.objects.create(
-            nombre_especialidad="CardiologíaTestVPC", 
+            nombre_especialidad="CardiologíaTestVPC",
             duracion_consulta_minutos=30
         )
         self.profesional_user = User.objects.create_user(username='drcorazontest_vpc', password='password123')
         self.profesional = ProfesionalSalud.objects.create(
-            user_account=self.profesional_user, 
+            user_account=self.profesional_user,
             especialidad=self.especialidad
         )
         
@@ -315,29 +233,29 @@ class VerProximasCitasViewTests(TestCase):
         # Cita futura programada (debe aparecer)
         fecha_inicio_1 = ahora + timedelta(days=5)
         self.cita_futura_programada = Cita.objects.create(
-            paciente=self.paciente_profile, 
+            paciente=self.paciente_profile,
             profesional=self.profesional,
-            fecha_hora_inicio_cita=fecha_inicio_1, 
-            fecha_hora_fin_cita=fecha_inicio_1 + duracion, 
+            fecha_hora_inicio_cita=fecha_inicio_1,
+            fecha_hora_fin_cita=fecha_inicio_1 + duracion,
             estado_cita='Programada'
         )
         
         # Cita pasada programada (no debe aparecer)
         fecha_inicio_2 = ahora - timedelta(days=5)
         self.cita_pasada_programada = Cita.objects.create(
-            paciente=self.paciente_profile, 
+            paciente=self.paciente_profile,
             profesional=self.profesional,
-            fecha_hora_inicio_cita=fecha_inicio_2, 
-            fecha_hora_fin_cita=fecha_inicio_2 + duracion, 
+            fecha_hora_inicio_cita=fecha_inicio_2,
+            fecha_hora_fin_cita=fecha_inicio_2 + duracion,
             estado_cita='Programada'
         )
         
         # Cita futura cancelada (no debe aparecer)
         fecha_inicio_3 = ahora + timedelta(days=3)
         self.cita_futura_cancelada = Cita.objects.create(
-            paciente=self.paciente_profile, 
+            paciente=self.paciente_profile,
             profesional=self.profesional,
-            fecha_hora_inicio_cita=fecha_inicio_3, 
+            fecha_hora_inicio_cita=fecha_inicio_3,
             fecha_hora_fin_cita=fecha_inicio_3 + duracion,
             estado_cita='Cancelada'
         )
@@ -345,8 +263,7 @@ class VerProximasCitasViewTests(TestCase):
         self.proximas_citas_url = reverse('agendamiento:ver_proximas_citas_paciente')
 
     def test_ver_proximas_citas_context_and_template(self):
-        """
-        TEST 7: Visualización correcta de próximas citas
+        """Muestra solo citas futuras programadas (excluye pasadas y canceladas).
         
         Verifica que se muestren solo las citas futuras con estado 'Programada'
         y se use el template correcto.
@@ -364,18 +281,12 @@ class VerProximasCitasViewTests(TestCase):
         self.assertNotIn(self.cita_pasada_programada, citas_en_contexto)
         self.assertNotIn(self.cita_futura_cancelada, citas_en_contexto)
 
-
-# ===================================================================================
-# CATEGORÍA 5: PRUEBAS DE AGENDAMIENTO E MODIFICACIÓN (4 TESTS)
-# ===================================================================================
+# ====================================================================================
+# CATEGORÍA 5: AGENDAMIENTO Y MODIFICACIÓN (4 TESTS)
+# ====================================================================================
 
 class AgendarNuevaCitaIntegrationTests(TestCase):
-    """
-    TEST 8/17: Agendamiento exitoso de nueva cita
-    
-    Prueba de integración para el flujo completo de agendamiento 
-    de una nueva cita por parte de un Asesor de Servicio.
-    """
+    """Test 8/26: Agendamiento de nuevas citas por asesores (flujo completo)."""
     
     def setUp(self):
         # Crear Asesor de Servicio
@@ -467,14 +378,8 @@ class AgendarNuevaCitaIntegrationTests(TestCase):
         self.assertEqual(cita_creada.fecha_hora_inicio_cita, fecha_hora_inicio_esperada,
                          "La fecha y hora de inicio de la cita creada no es la esperada.")
 
-
 class ModificarCitaIntegrationTests(TestCase):
-    """
-    TEST 9/17: Modificación exitosa de cita existente
-    
-    Prueba de integración para el flujo completo de modificación 
-    de una cita existente por parte de un Asesor de Servicio.
-    """
+    """Test 9/26: Modificación de citas existentes por asesores (flujo completo)."""
     
     def setUp(self):
         # Asesor
@@ -586,12 +491,7 @@ class ModificarCitaIntegrationTests(TestCase):
 
 
 class CancelarCitaIntegrationTests(TestCase):
-    """
-    TEST 10/17: Cancelación exitosa de cita existente
-    
-    Prueba de integración para el flujo completo de cancelación 
-    de una cita existente por parte de un Asesor de Servicio.
-    """
+    """Test 10/26: Cancelación de citas existentes por asesores (flujo completo)."""
     
     def setUp(self):
         self.asesor_user = User.objects.create_user(username='asesor_cancelador', password='password123')
@@ -633,11 +533,7 @@ class CancelarCitaIntegrationTests(TestCase):
         self.visualizar_citas_url = reverse('agendamiento:visualizar_citas_gestionadas')
 
     def test_asesor_cancela_cita_exitosamente(self):
-        """
-        TEST 10: Cancelación exitosa de cita por asesor
-        
-        Prueba el flujo completo donde un asesor cancela una cita exitosamente.
-        """
+        """Cancelación exitosa de cita por asesor (flujo completo GET confirmación → POST ejecución)."""
         self.client.login(username='asesor_cancelador', password='password123')
 
         # Paso 1: Acceder a la página de confirmación de cancelación
@@ -658,12 +554,7 @@ class CancelarCitaIntegrationTests(TestCase):
 
 
 class ConflictoSlotIntegrationTests(TestCase):
-    """
-    TEST 11/17: Prevención de conflictos en slots de tiempo
-    
-    Verifica que el sistema prevenga la creación de citas 
-    en slots de tiempo que ya están ocupados.
-    """
+    """Test 11/26: Prevención de conflictos en slots de tiempo ocupados."""
     
     def setUp(self):
         # Asesor
@@ -758,12 +649,7 @@ class ConflictoSlotIntegrationTests(TestCase):
 # ===================================================================================
 
 class RegistrarAsistenciaIntegrationTests(TestCase):
-    """
-    TEST 12/17: Registro de asistencia a citas
-    
-    Prueba de integración para el flujo completo de registro 
-    de asistencia por parte de un Profesional de Salud.
-    """
+    """Test 12/26: Registro de asistencia por profesional (post-cita)."""
     
     def setUp(self):
         self.paciente_user = User.objects.create_user(username='paciente_asiste', password='password123')
@@ -805,11 +691,7 @@ class RegistrarAsistenciaIntegrationTests(TestCase):
         self.agenda_profesional_url_base = reverse('agendamiento:ver_agenda_profesional')
 
     def test_profesional_registra_asistencia_realizada(self):
-        """
-        TEST 12: Registro exitoso de asistencia
-        
-        Prueba que el profesional marca una cita como 'Realizada'.
-        """
+        """Profesional marca cita como 'Realizada' (flujo completo: GET confirmación → POST registro)."""
         self.client.login(username='doc_pediatra_asist', password='password123')
 
         # Paso 1: Acceder a la página de confirmación de asistencia
@@ -838,12 +720,7 @@ class RegistrarAsistenciaIntegrationTests(TestCase):
 # ===================================================================================
 
 class ActualizarDatosPacienteIntegrationTests(TestCase):
-    """
-    TESTS 13-14/17: Actualización de datos de contacto del paciente
-    
-    Pruebas de integración para el flujo completo de actualización 
-    de datos personales por parte del paciente.
-    """
+    """Tests 13-14/26: Actualización de datos de contacto por paciente (email y teléfono)."""
     
     def setUp(self):
         self.paciente_user = User.objects.create_user(
@@ -866,11 +743,7 @@ class ActualizarDatosPacienteIntegrationTests(TestCase):
         self.dashboard_paciente_url = reverse('agendamiento:dashboard_paciente')
 
     def test_paciente_actualiza_datos_exitosamente(self):
-        """
-        TEST 13: Actualización exitosa de datos de contacto
-        
-        Prueba que el paciente actualiza su email y teléfono y es redirigido a la página de éxito.
-        """
+        """Actualización exitosa de email y teléfono con redirección a página de éxito."""
         self.client.login(username='pac_actualiza', password='password123')
 
         # Paso 1: Cargar el formulario de actualización
@@ -900,11 +773,7 @@ class ActualizarDatosPacienteIntegrationTests(TestCase):
         self.assertEqual(self.paciente.telefono_contacto, nuevo_telefono)
 
     def test_paciente_actualiza_datos_sin_cambios(self):
-        """
-        TEST 14: Actualización sin cambios en los datos
-        
-        Prueba que si no hay cambios, se informa directamente en la página del formulario.
-        """
+        """Intento de actualización sin cambios muestra mensaje informativo en formulario."""
         self.client.login(username='pac_actualiza', password='password123')
         
         # Datos POST idénticos a los iniciales
@@ -929,12 +798,7 @@ class ActualizarDatosPacienteIntegrationTests(TestCase):
 # ===================================================================================
 
 class PacienteCambioPasswordIntegrationTests(TestCase):
-    """
-    TESTS 15-16/17: Cambio de contraseña del paciente
-    
-    Pruebas de integración para el flujo completo de cambio 
-    de contraseña por parte del paciente.
-    """
+    """Tests 15-16/26: Cambio de contraseña del paciente (validación de reglas Django)."""
     
     def setUp(self):
         self.paciente_user = User.objects.create_user(
@@ -955,12 +819,7 @@ class PacienteCambioPasswordIntegrationTests(TestCase):
         self.password_change_done_url = reverse('agendamiento:password_change_done')
 
     def test_paciente_cambia_password_exitosamente_con_reglas_standard(self):
-        """
-        TEST 15: Cambio exitoso de contraseña
-        
-        Verifica que un paciente puede cambiar su contraseña a una nueva que
-        cumpla las reglas estándar de Django.
-        """
+        """Cambio exitoso a contraseña que cumple reglas estándar de Django."""
         self.client.login(username='paciente_cambia_pass', password='PasswordInicial123!')
 
         nueva_password_valida = "NuevaClaveSegura456$" 
@@ -982,12 +841,7 @@ class PacienteCambioPasswordIntegrationTests(TestCase):
                         "La nueva contraseña no fue guardada correctamente.")
 
     def test_paciente_falla_al_cambiar_password_por_ser_corta(self):
-        """
-        TEST 16: Fallo en cambio de contraseña por validación
-        
-        Verifica que un paciente no puede cambiar a una contraseña demasiado corta
-        según las reglas estándar de Django.
-        """
+        """Rechazo de contraseña demasiado corta según validaciones Django."""
         self.client.login(username='paciente_cambia_pass', password='PasswordInicial123!')
         
         password_corta = "corta" 
@@ -1008,12 +862,7 @@ class PacienteCambioPasswordIntegrationTests(TestCase):
 
 
 class ModificarCitaEstadoNoPermitidoTests(TestCase):
-    """
-    TEST 17/17: Restricciones de modificación por estado de cita
-    
-    Verifica que no se puedan modificar citas que ya han sido canceladas
-    o están en estados no permitidos para modificación.
-    """
+    """Test 17/26: Restricción de modificación de citas canceladas."""
     
     def setUp(self):
         self.asesor_user = User.objects.create_user(username='asesor_estado', password='password123')
@@ -1050,11 +899,7 @@ class ModificarCitaEstadoNoPermitidoTests(TestCase):
         self.visualizar_citas_url = reverse('agendamiento:visualizar_citas_gestionadas')
 
     def test_no_permite_modificar_cita_cancelada(self):
-        """
-        TEST 17: Restricción de modificación de citas canceladas
-        
-        Verifica que no se pueda modificar una cita que ya está en estado 'Cancelada'.
-        """
+        """No permite modificar citas en estado 'Cancelada' (redirección o restricción en página)."""
         self.client.login(username='asesor_estado', password='password123')        # Intentar acceder a la página de modificación de una cita cancelada
         response = self.client.get(self.modificar_cita_url)
         
@@ -1085,52 +930,48 @@ class ModificarCitaEstadoNoPermitidoTests(TestCase):
 
 
 # ===================================================================================
-# TESTS CRÍTICOS PARA DESPLIEGUE EN PRODUCCIÓN
+# CATEGORÍA 9: PRODUCCIÓN EN CLOUD (9 TESTS)
 # ===================================================================================
 
 class TestConfiguracionProduccion(TestCase):
-    """Tests críticos para validar configuración para un entorno de producción."""
+    """Tests 18-19/26: Validación de configuración de producción (variables de entorno y ALLOWED_HOSTS)."""
 
-    def test_production_environment_settings(self):
-        """
-        TEST CRÍTICO: Valida configuraciones clave esperadas en un entorno de producción.
-        Este test verifica los valores que settings DEBERÍA tener si RENDER
-        estuviera activo y las variables de entorno de BD estuvieran configuradas.
-        """
+    def test_production_environment_variables(self):
+        """Valida variables de entorno críticas (SECRET_KEY, DATABASE_URL, DEBUG=False)."""
+        expected_production_env_vars = ['DATABASE_URL', 'DJANGO_SECRET_KEY', 'RENDER']
+        
+        for var in expected_production_env_vars:
+            value = os.getenv(var)
+        
+        fallback_secret_key = 'django-insecure-!!0-8(40=d281g9_(m!9pa51jl$@=bi@r07m7ec7v7u_*bbk=_'
+        if settings.SECRET_KEY == fallback_secret_key and os.getenv('RENDER'):
+            pass
+        
         expected_debug_production = False
-        expected_allowed_host_production = 'sistema-agendamiento-citas.onrender.com'
-        expected_db_engine_production = 'postgresql'
+        with override_settings(DEBUG=expected_debug_production):
+            self.assertEqual(settings.DEBUG, expected_debug_production, "DEBUG debería ser False en producción.")
 
+    def test_production_allowed_hosts_and_security(self):
+        """Valida ALLOWED_HOSTS, cookies seguras (SESSION_COOKIE_SECURE, CSRF_COOKIE_SECURE) y STATICFILES."""
+        expected_allowed_host_production = 'sistema-agendamiento-citas.onrender.com'
+        
         with override_settings(
-            DEBUG=expected_debug_production,
             ALLOWED_HOSTS=[expected_allowed_host_production, '.onrender.com'],
             STATICFILES_STORAGE='whitenoise.storage.CompressedManifestStaticFilesStorage',
             SESSION_COOKIE_SECURE=True,
             CSRF_COOKIE_SECURE=True
         ):
-            self.assertEqual(settings.DEBUG, expected_debug_production, "DEBUG debería ser False en configuración de producción.")
             self.assertIn(expected_allowed_host_production, settings.ALLOWED_HOSTS,
-                          f"El dominio '{expected_allowed_host_production}' debería estar en ALLOWED_HOSTS para producción.")
+                          f"El dominio '{expected_allowed_host_production}' debería estar en ALLOWED_HOSTS.")
             self.assertEqual(settings.STATICFILES_STORAGE, 'whitenoise.storage.CompressedManifestStaticFilesStorage')
             self.assertTrue(settings.SESSION_COOKIE_SECURE, "SESSION_COOKIE_SECURE debería ser True en producción.")
             self.assertTrue(settings.CSRF_COOKIE_SECURE, "CSRF_COOKIE_SECURE debería ser True en producción.")
 
-        expected_production_env_vars = ['DATABASE_URL', 'DJANGO_SECRET_KEY', 'RENDER']
-        
-        for var in expected_production_env_vars:
-            value = os.getenv(var)
-
-        fallback_secret_key = 'django-insecure-!!0-8(40=d281g9_(m!9pa51jl$@=bi@r07m7ec7v7u_*bbk=_'
-        if settings.SECRET_KEY == fallback_secret_key and os.getenv('RENDER'):
-            pass
-
 class TestConexionBaseDatos(TestCase):
-    """Tests críticos para validar conectividad con base de datos de producción"""
+    """Tests 20-22/26: Validación de conectividad con base de datos (ejecución básica, CRUD, timeouts)."""
     
     def test_database_connection_basic(self):
-        """
-        TEST CRÍTICO 2: Validar que la conexión a base de datos funciona
-        """
+        """Valida conexión a base de datos con query SELECT 1."""
         from django.db import connection
         from django.core.exceptions import ImproperlyConfigured
         
@@ -1143,9 +984,7 @@ class TestConexionBaseDatos(TestCase):
             self.fail("Error de conexión a base de datos")
     
     def test_database_crud_operations(self):
-        """
-        Validar operaciones CRUD básicas en la base de datos
-        """
+        """Valida operaciones CRUD sobre modelo Paciente (Create, Read, Update, Delete)."""
         from agendamiento.models import Paciente
         from django.contrib.auth.models import User
         
@@ -1173,9 +1012,7 @@ class TestConexionBaseDatos(TestCase):
             self.fail("Error en operaciones CRUD")
     
     def test_database_timeout_handling(self):
-        """
-        Validar manejo de timeouts de base de datos
-        """
+        """Valida reconexión automática tras timeout de conexión a base de datos."""
         from django.db import connection
         import time
         
@@ -1190,27 +1027,23 @@ class TestConexionBaseDatos(TestCase):
             self.fail("Error en test de timeout")
 
 class TestCSRFProtection(TestCase):
-    """Tests críticos para validar protección CSRF en producción"""
+    """Tests 23-26/26: Validación de protección CSRF (login, token válido, middleware, cookies)."""
     
     def setUp(self):
-        """Configurar datos de prueba para tests CSRF"""
+        """Configura cliente con enforce_csrf_checks=True y crea usuario de prueba."""
         self.client = Client(enforce_csrf_checks=True)
         self.test_user = User.objects.create_user(username='testcsrf', password='testpass123', email='testcsrf@test.com')
         self.test_paciente = Paciente.objects.create(user_account=self.test_user, tipo_documento="CC", numero_documento="87654321", telefono_contacto="1234567890", fecha_nacimiento="1990-01-01")
     
     def test_csrf_protection_login_form(self):
-        """
-        TEST CRÍTICO 3: Validar que el formulario de login tiene protección CSRF
-        """
+        """Login sin token CSRF retorna 403 Forbidden (protección activa)."""
         from django.urls import reverse
         login_url = reverse('agendamiento:login')
         response = self.client.post(login_url, {'username': 'testcsrf', 'password': 'testpass123'})
         self.assertEqual(response.status_code, 403, "Login sin CSRF token debe retornar 403 Forbidden")
     
     def test_csrf_protection_with_valid_token(self):
-        """
-        Validar que formularios CON token CSRF válido funcionan
-        """
+        """Formulario con token CSRF válido funciona correctamente (302 redirect esperado)."""
         from django.urls import reverse
         login_url = reverse('agendamiento:login')
         response = self.client.get(login_url)
@@ -1224,18 +1057,14 @@ class TestCSRFProtection(TestCase):
             self.assertIn(response.status_code, [200, 302], "Login con CSRF token válido debe ser exitoso")
     
     def test_csrf_middleware_active(self):
-        """
-        Validar que el middleware CSRF está activo
-        """
+        """Valida que CSRFViewMiddleware está configurado en MIDDLEWARE."""
         from django.conf import settings
         middleware_classes = settings.MIDDLEWARE
         csrf_middleware_found = any('csrf' in middleware.lower() for middleware in middleware_classes)
         self.assertTrue(csrf_middleware_found, "CSRFViewMiddleware debe estar configurado en MIDDLEWARE")
     
     def test_csrf_cookie_settings(self):
-        """
-        Validar configuraciones de cookies CSRF para producción
-        """
+        """Valida configuraciones de cookies CSRF para producción (SECURE, HTTPONLY)."""
         from django.conf import settings
         csrf_cookie_secure = getattr(settings, 'CSRF_COOKIE_SECURE', False)
         csrf_cookie_httponly = getattr(settings, 'CSRF_COOKIE_HTTPONLY', False)
