@@ -1,4 +1,7 @@
-# agendamiento/middleware.py
+"""
+Middlewares de seguridad para el Sistema de Agendamiento.
+Implementa protección de sesiones y validación de integridad.
+"""
 from django.contrib.auth import logout
 from django.contrib import messages
 from django.shortcuts import redirect
@@ -7,56 +10,58 @@ from django.utils import timezone
 from datetime import timedelta
 import sys
 
+
 class SessionSecurityMiddleware:
     """
-    Middleware para mejorar la seguridad de las sesiones.
+    Middleware de seguridad de sesiones.
+    
+    Funcionalidades:
+    - Expiración automática por inactividad (2 horas)
+    - Seguimiento de última actividad del usuario
+    - Cierre seguro de sesiones expiradas
     """
     
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Deshabilitar middleware durante tests
+        # Excluir durante tests
         if 'test' in sys.argv:
-            response = self.get_response(request)
-            return response
+            return self.get_response(request)
         
-        # Excluir rutas del admin de Django para superusuarios
+        # Excluir admin de Django para superusuarios
         if request.path.startswith('/admin/') and request.user.is_authenticated and request.user.is_superuser:
-            response = self.get_response(request)
-            return response
+            return self.get_response(request)
         
-        # Verificar si el usuario está autenticado
+        # Validar sesión de usuarios autenticados
         if request.user.is_authenticated:
-            # Verificar si la sesión ha expirado por inactividad
             if self.is_session_expired(request):
                 self.handle_expired_session(request)
                 return redirect(reverse('agendamiento:login'))
             
-            # Actualizar el último acceso
+            # Actualizar marca de tiempo de actividad
             self.update_last_activity(request)
         
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
 
     def is_session_expired(self, request):
         """
-        Verifica si la sesión ha expirado por inactividad.
+        Verifica si la sesión ha expirado por inactividad (2 horas).
         """
         last_activity = request.session.get('last_activity')
-        if last_activity:
-            # Convertir de string a datetime si es necesario
-            if isinstance(last_activity, str):
-                try:
-                    last_activity = timezone.datetime.fromisoformat(last_activity)
-                except ValueError:
-                    return True  # Si hay error en el formato, considerar expirada
-            
-            # Verificar si han pasado más de 2 horas de inactividad
-            if timezone.now() - last_activity > timedelta(hours=2):
-                return True
         
-        return False
+        if not last_activity:
+            return False
+        
+        # Convertir string a datetime si es necesario
+        if isinstance(last_activity, str):
+            try:
+                last_activity = timezone.datetime.fromisoformat(last_activity)
+            except ValueError:
+                return True  # Error de formato = sesión expirada
+        
+        # Verificar límite de inactividad (2 horas)
+        return timezone.now() - last_activity > timedelta(hours=2)
 
     def update_last_activity(self, request):
         """
@@ -66,68 +71,72 @@ class SessionSecurityMiddleware:
 
     def handle_expired_session(self, request):
         """
-        Maneja una sesión expirada de manera segura.
+        Cierra y limpia una sesión expirada de manera segura.
         """
-        # Cerrar la sesión del usuario
         logout(request)
-        
-        # Limpiar la sesión completamente
         request.session.flush()
         
-        # Agregar mensaje informativo solo si MessageMiddleware está disponible
+        # Agregar mensaje informativo (si MessageMiddleware está disponible)
         try:
             messages.warning(request, "Tu sesión ha expirado por inactividad. Por favor, inicia sesión nuevamente.")
         except Exception:
-            # Si no se pueden agregar mensajes, continuar sin el mensaje
-            pass
+            pass  # Continuar sin mensaje si hay error
 
 
 class SessionIntegrityMiddleware:
     """
-    Middleware para verificar la integridad de las sesiones y prevenir ataques.
+    Middleware de integridad de sesiones.
+    
+    Funcionalidades:
+    - Verificación de timestamp de login
+    - Validación de estado activo del usuario
+    - Validación de existencia de perfil
+    - Invalidación de sesiones comprometidas
     """
     
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Deshabilitar middleware durante tests
+        # Excluir durante tests
         if 'test' in sys.argv:
-            response = self.get_response(request)
-            return response
+            return self.get_response(request)
         
-        # Excluir rutas del admin de Django para superusuarios
+        # Excluir admin de Django para superusuarios
         if request.path.startswith('/admin/') and request.user.is_authenticated and request.user.is_superuser:
-            response = self.get_response(request)
-            return response
+            return self.get_response(request)
         
-        # Verificar integridad de la sesión antes de procesar la request
+        # Verificar integridad de sesiones autenticadas
         if request.user.is_authenticated:
             if not self.verify_session_integrity(request):
                 self.invalidate_session(request)
                 return redirect(reverse('agendamiento:login'))
         
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
 
     def verify_session_integrity(self, request):
         """
         Verifica que la sesión sea válida y no haya sido comprometida.
+        
+        Validaciones:
+        1. Existencia de timestamp de login
+        2. Usuario activo en el sistema
+        3. Usuario tiene perfil válido (Paciente/Profesional/Asesor/Admin)
         """
-        # Verificar que existe el timestamp de login
-        login_timestamp = request.session.get('login_timestamp')
-        if not login_timestamp:
+        # Validar timestamp de login
+        if not request.session.get('login_timestamp'):
             return False
         
-        # Verificar que el usuario sigue teniendo el perfil correcto
         try:
             user = request.user
-            # Verificar que el usuario sigue activo
+            
+            # Validar usuario activo
             if not user.is_active:
                 return False
-              # Verificar que el usuario sigue teniendo un perfil válido
+            
+            # Validar existencia de perfil válido
             has_profile = (
-                user.is_superuser or  # Permitir acceso a superusuarios/administradores
+                user.is_superuser or  # Administrador
                 hasattr(user, 'asesor_perfil') or 
                 hasattr(user, 'profesional_perfil') or 
                 hasattr(user, 'paciente_perfil')
@@ -143,14 +152,13 @@ class SessionIntegrityMiddleware:
 
     def invalidate_session(self, request):
         """
-        Invalida una sesión comprometida.
+        Invalida y limpia una sesión comprometida de manera segura.
         """
         logout(request)
         request.session.flush()
         
-        # Agregar mensaje de error solo si MessageMiddleware está disponible
+        # Agregar mensaje de error (si MessageMiddleware está disponible)
         try:
             messages.error(request, "Por seguridad, tu sesión ha sido invalidada. Por favor, inicia sesión nuevamente.")
         except Exception:
-            # Si no se pueden agregar mensajes, continuar sin el mensaje
-            pass
+            pass  # Continuar sin mensaje si hay error
