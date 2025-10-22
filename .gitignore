@@ -59,7 +59,8 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media/
-staticfiles/ # Si usas collectstatic para un directorio raíz de estáticos en producción
+# Archivos estáticos recolectados (generados con collectstatic)
+staticfiles/
 
 # Visual Studio Code IDE
 .vscode/*
@@ -78,6 +79,8 @@ staticfiles/ # Si usas collectstatic para un directorio raíz de estáticos en p
 
 # Environments
 .env
+.env.local
+.env.*.local
 .venv
 venv/
 ENV/
@@ -88,9 +91,34 @@ venv.bak/
 # Windows thumbnail cache files
 Thumbs.db
 Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor swap/backup files
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
 
 # Mypy cache
 .mypy_cache/
+.dmypy.json
+dmypy.json
 
 # Pyright cache
 .pyright_cache/
+
+# Pyre type checker
+.pyre/
+
+# JetBrains IDEs (PyCharm, IntelliJ, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
