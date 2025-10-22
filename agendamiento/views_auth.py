@@ -1,20 +1,17 @@
-# agendamiento/views_auth.py
-from django.shortcuts import redirect
-from django.contrib.auth import views as auth_views
-from django.urls import reverse_lazy
+"""Vistas de autenticación personalizadas (login y logout)."""
+
 from django.contrib import messages
+from django.contrib.auth import views as auth_views
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
 
 class CustomLoginView(auth_views.LoginView):
-    """
-    Vista de login personalizada que redirige a usuarios ya autenticados
-    a su dashboard correspondiente y maneja la seguridad de sesiones.
-    """
+    """Vista de login personalizada con redirección según rol y seguridad de sesiones."""
     template_name = 'agendamiento/login.html'
-    
+
     def dispatch(self, request, *args, **kwargs):
-        # Si el usuario ya está autenticado, redirigirlo a su dashboard
+        """Redirige usuarios autenticados a su dashboard correspondiente."""
         if request.user.is_authenticated:
-            # Determinar a qué dashboard redirigir según el tipo de usuario
             if hasattr(request.user, 'asesor_perfil'):
                 messages.info(request, "Ya tienes una sesión activa como Asesor de Servicio.")
                 return redirect('agendamiento:dashboard_asesor')
@@ -25,55 +22,45 @@ class CustomLoginView(auth_views.LoginView):
                 messages.info(request, "Ya tienes una sesión activa como Paciente.")
                 return redirect('agendamiento:dashboard_paciente')
             else:
-                # Usuario sin perfil específico, redirigir a página de inicio
                 messages.info(request, "Ya tienes una sesión activa.")
                 return redirect('pagina_inicio')
-        
+
         return super().dispatch(request, *args, **kwargs)
-    
+
     def form_valid(self, form):
-        """
-        Sobrescribir para configurar la sesión con mayor seguridad.
-        """
+        """Configura la sesión con seguridad y muestra mensaje de bienvenida personalizado."""
         response = super().form_valid(form)
-        
-        # Configurar la sesión para mayor seguridad
         request = self.request
-        
-        # Regenerar la clave de sesión para evitar session fixation
+
+        # Configurar seguridad de la sesión
         request.session.cycle_key()
-        
-        # Configurar que la sesión expire al cerrar el navegador
-        request.session.set_expiry(0)  # 0 significa "expira cuando se cierre el navegador"
-        
-        # Agregar información de seguridad a la sesión
+        request.session.set_expiry(0)
         request.session['login_timestamp'] = request.session.session_key
-        
-        # Mensaje de bienvenida personalizado según el tipo de usuario
+
+        # Mensaje de bienvenida según tipo de usuario
         user = form.get_user()
+        nombre = user.get_full_name() or user.username
         if hasattr(user, 'asesor_perfil'):
-            messages.success(request, f"Bienvenido, {user.get_full_name() or user.username}. Sesión iniciada como Asesor de Servicio.")
+            messages.success(request, f"Bienvenido, {nombre}. Sesión iniciada como Asesor de Servicio.")
         elif hasattr(user, 'profesional_perfil'):
-            messages.success(request, f"Bienvenido, {user.get_full_name() or user.username}. Sesión iniciada como Profesional de la Salud.")
+            messages.success(request, f"Bienvenido, {nombre}. Sesión iniciada como Profesional de la Salud.")
         elif hasattr(user, 'paciente_perfil'):
-            messages.success(request, f"Bienvenido, {user.get_full_name() or user.username}. Sesión iniciada como Paciente.")
+            messages.success(request, f"Bienvenido, {nombre}. Sesión iniciada como Paciente.")
         else:
-            messages.success(request, f"Bienvenido, {user.get_full_name() or user.username}.")
-        
+            messages.success(request, f"Bienvenido, {nombre}.")
+
         return response
-    
+
     def get_success_url(self):
-        """
-        Determinar a dónde redirigir después del login según el tipo de usuario.
-        """
+        """Determina la URL de redirección post-login según el tipo de usuario."""
         user = self.request.user
-        
+
         # Verificar si hay un 'next' en la URL
         next_url = self.get_redirect_url()
         if next_url:
             return next_url
-        
-        # Redirigir según el tipo de usuario
+
+        # Redirigir según tipo de usuario
         if hasattr(user, 'asesor_perfil'):
             return reverse_lazy('agendamiento:dashboard_asesor')
         elif hasattr(user, 'profesional_perfil'):
@@ -83,20 +70,14 @@ class CustomLoginView(auth_views.LoginView):
         else:
             return reverse_lazy('pagina_inicio')
 
-
 class CustomLogoutView(auth_views.LogoutView):
-    """
-    Vista de logout personalizada que limpia la sesión de manera segura.
-    """
+    """Vista de logout personalizada que limpia la sesión de manera segura."""
     next_page = reverse_lazy('pagina_inicio')
-    
+
     def dispatch(self, request, *args, **kwargs):
-        """
-        Limpiar la sesión de manera segura antes del logout.
-        """
+        """Limpia la sesión de manera segura antes del logout."""
         if request.user.is_authenticated:
-            # Limpiar datos sensibles de la sesión
-            request.session.flush()  # Elimina todos los datos de la sesión y regenera la clave
+            request.session.flush()
             messages.success(request, "Sesión cerrada correctamente. ¡Hasta pronto!")
-        
+
         return super().dispatch(request, *args, **kwargs)
