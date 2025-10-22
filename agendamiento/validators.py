@@ -1,10 +1,17 @@
+"""
+Validadores personalizados de contraseñas para el Sistema de Agendamiento.
+Implementa validaciones de seguridad con mensajes en español.
+"""
 from django.core.exceptions import ValidationError
 from django.utils.translation import ngettext
 
+
 class CustomMinimumLengthValidator:
     """
-    Validador personalizado para longitud mínima con mensajes en español.
+    Valida que la contraseña tenga una longitud mínima.
+    Por defecto: 8 caracteres.
     """
+    
     def __init__(self, min_length=8):
         self.min_length = min_length
 
@@ -30,8 +37,10 @@ class CustomMinimumLengthValidator:
 
 class CustomCommonPasswordValidator:
     """
-    Validador personalizado para contraseñas comunes con mensaje en español.
+    Valida que la contraseña no sea una contraseña común o predecible.
+    Utiliza la lista de contraseñas comunes de Django.
     """
+    
     def validate(self, password, user=None):
         from django.contrib.auth.password_validation import CommonPasswordValidator
         
@@ -50,8 +59,10 @@ class CustomCommonPasswordValidator:
 
 class CustomNumericPasswordValidator:
     """
-    Validador personalizado para contraseñas numéricas con mensaje en español.
+    Valida que la contraseña no sea completamente numérica.
+    Rechaza contraseñas que solo contengan dígitos (ej: 12345678).
     """
+    
     def validate(self, password, user=None):
         if password.isdigit():
             raise ValidationError(
