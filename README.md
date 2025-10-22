@@ -5,6 +5,7 @@
 - **Autor**: Kevin Agredo Jara
 - **Institución**: Servicio Nacional de Aprendizaje (SENA) 
 - **Programa**: Tecnología en Análisis y Desarrollo de Software
+- **Instructor**: Nain Zuñiga Porto
 - **Tipo**: Proyecto de Grado - MVP (Producto Mínimo Viable)
 - **Cliente**: IPS Medical Integral
 - **Fecha**: Octubre 2025
@@ -46,8 +47,8 @@ El proyecto siguió una metodología híbrida combinando:
 #### 1. **Análisis de Requerimientos**
 ```
 Stakeholders → Requerimientos Funcionales → Requerimientos No Funcionales
-     ↓                    ↓                         ↓
-Entrevistas         Casos de Uso            Constraints Técnicos
+     ↓                    ↓                              ↓
+Entrevistas          Casos de Uso                Limitaciones Técnicas
 ```
 
 #### 2. **Diseño Iterativo**
@@ -58,8 +59,8 @@ Entrevistas         Casos de Uso            Constraints Técnicos
 #### 3. **Desarrollo Incremental**
 ```
 Sprint 1: Autenticación y Roles → Sprint 2: Gestión Pacientes → Sprint 3: Agendamiento
-    ↓                                ↓                           ↓
-Testing Unitario              Testing Integración      Testing Sistema
+            ↓                                 ↓                          ↓
+    Testing Unitario                  Testing Integración         Testing Sistema
 ```
 
 ---
@@ -68,56 +69,56 @@ Testing Unitario              Testing Integración      Testing Sistema
 
 ### Arquitectura General
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    CAPA DE PRESENTACIÓN                     │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐    │
-│  │  Dashboard  │ │ Formularios │ │   Reportes/Vistas   │    │
-│  │   Usuarios  │ │ Dinámicos   │ │    Responsivas      │    │
-│  └─────────────┘ └─────────────┘ └─────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                    CAPA DE PRESENTACIÓN                   │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐  │
+│  │  Dashboard  │ │ Formularios │ │   Reportes/Vistas   │  │
+│  │   Usuarios  │ │  Dinámicos  │ │    Responsivas      │  │
+│  └─────────────┘ └─────────────┘ └─────────────────────┘  │
+└───────────────────────────────────────────────────────────┘
                               │
                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     CAPA DE NEGOCIO                         │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐    │
-│  │   Gestión   │ │ Validaciones│ │    Middleware       │    │
-│  │    Roles    │ │  Formulario │ │    Seguridad        │    │
-│  └─────────────┘ └─────────────┘ └─────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                     CAPA DE NEGOCIO                       │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐  │
+│  │   Gestión   │ │ Validaciones│ │      Middleware     │  │
+│  │    Roles    │ │  Formulario │ │      Seguridad      │  │
+│  └─────────────┘ └─────────────┘ └─────────────────────┘  │
+└───────────────────────────────────────────────────────────┘
                               │
                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    CAPA DE DATOS                            │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐    │
-│  │    ORM      │ │  Migraciones│ │    Base de Datos    │    │
-│  │   Django    │ │  Automáticas│ │  SQLite/PostgreSQL  │    │
-│  └─────────────┘ └─────────────┘ └─────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                    CAPA DE DATOS                          │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐  │
+│  │    ORM      │ │ Migraciones │ │    Base de Datos    │  │
+│  │   Django    │ │ Automáticas │ │  SQLite/PostgreSQL  │  │
+│  └─────────────┘ └─────────────┘ └─────────────────────┘  │
+└───────────────────────────────────────────────────────────┘
 ```
 
-### Stack Tecnológico Seleccionado
+### Stack Tecnológico
 
-#### Backend Framework: Django 5.0.14
-**Justificación de Selección:**
-- **Principio DRY**: "Don't Repeat Yourself" para código mantenible
-- **ORM Integrado**: Abstracción de base de datos con migraciones automáticas
-- **Sistema de Autenticación**: Robusto y extensible por defecto
-- **Admin Interface**: Generación automática de interfaces administrativas
-- **Ecosistema Maduro**: Amplia documentación y comunidad activa
+#### Framework Principal: Django 5.0.14
+**¿Por qué Django?**
+- Filosofía "No te repitas" (Don't Repeat Yourself): Código más mantenible y reutilizable
+- Sistema de base de datos integrado que facilita los cambios de estructura
+- Seguridad y autenticación incluidas desde el inicio
+- Panel de administración generado automáticamente
+- Comunidad activa con documentación extensa
 
-#### Base de Datos: Arquitectura Dual
+#### Base de Datos: Configuración Dual
 ```
-Desarrollo Local          Producción
+  Desarrollo                 Producción
 ┌─────────────┐          ┌─────────────────┐
 │   SQLite    │   -->    │   PostgreSQL    │
-│   db.sqlite3│          │  (Render DB)    │
+│   Local     │          │   En la Nube    │
 └─────────────┘          └─────────────────┘
 ```
 
-**Justificación Técnica:**
-- **SQLite**: Simplicidad para desarrollo y testing local
-- **PostgreSQL**: Robustez empresarial para entorno productivo en Render
-- **ORM Django**: Abstrae diferencias entre motores de base de datos
+**¿Por qué dos bases de datos?**
+- **SQLite**: Perfecta para desarrollo rápido sin configuración adicional
+- **PostgreSQL**: Robusta y confiable para manejar usuarios reales en producción
+- **Django ORM**: Permite cambiar entre ambas sin modificar el código
 
 ---
 
@@ -166,7 +167,7 @@ User (Django) ←── OneToOneField ──→ Paciente/Profesional/Asesor
 ```
 Programada → Realizada
     │           ↑
-    ▼           │
+    ↓           │
 Cancelada   No_Asistio
 ```
 
@@ -207,8 +208,8 @@ Caso de Uso Principal:
 ```
 Flujo de Agendamiento:
   Consultar Disponibilidad → Seleccionar Slot → Buscar Paciente → Confirmar Cita
-       ↓                        ↓              ↓               ↓
-  PlantillaHorario        DateTime Range    Documento       Email Notificación
+            ↓                       ↓                 ↓                 ↓
+      PlantillaHorario        DateTime Range       Documento     Email Notificación
 ```
 
 #### RF-004: Gestión de Agenda (Profesional)
@@ -224,7 +225,7 @@ Funcionalidades:
 ```
 Servicios Disponibles:
   - Visualización de próximas citas programadas
-  - Historial médico completo
+  - Historial de citas médicas completo
   - Actualización de datos de contacto
   - Cambio de contraseña seguro
 ```
@@ -254,93 +255,47 @@ Servicios Disponibles:
 
 ## Proceso de Desarrollo y Decisiones Técnicas
 
-### Fase 1: Análisis y Diseño 
+El desarrollo del sistema siguió un enfoque iterativo en cuatro fases principales, cada una construyendo sobre los logros de la anterior.
 
-#### Actividades Realizadas:
-1. **Levantamiento de Requerimientos**
-   - Entrevistas con stakeholders de IPS Medical Integral
-   - Análisis de procesos manuales existentes
-   - Definición de casos de uso principales
+### Fase 1: Análisis y Diseño
 
-2. **Diseño de Base de Datos**
-   - Modelado conceptual con diagramas ER
-   - Normalización hasta 3FN
-   - Definición de relaciones y constraints
+En esta etapa inicial se realizó el trabajo de planeación que define todo el proyecto:
+- **Entrevistas con la IPS** para entender sus necesidades reales
+- **Diseño de la base de datos** con diagramas que mapean cómo se relacionan pacientes, profesionales y citas
+- **Prototipos de pantallas** validados con los usuarios para asegurar que el sistema sea intuitivo
 
-3. **Prototipado de Interfaces**
-   - Wireframes de pantallas principales
-   - Definición de flujos de usuario
-   - Validación con usuarios finales
+### Fase 2: Construcción del Sistema
 
-### Fase 2: Implementación Core 
+El desarrollo se organizó en incrementos funcionales:
 
-#### Hitos Técnicos:
-```
-Semana 3: Configuración Django + Modelos Base
-    ↓
-Semana 4: Sistema de Autenticación + Roles
-    ↓
-Semana 5: CRUD Pacientes + Formularios
-    ↓
-Semana 6: Lógica de Agendamiento
-```
+**Configuración Base** → **Autenticación y Roles** → **Gestión de Pacientes** → **Sistema de Agendamiento**
 
-#### Desafíos Técnicos Enfrentados:
+#### Principales Desafíos Técnicos Resueltos:
 
-**1. Gestión de Disponibilidad Médica**
-```python
-# Problema: Calcular slots disponibles considerando horarios y citas existentes
-# Solución implementada:
-def calcular_slots_disponibles(profesional, fecha):
-    plantillas = PlantillaHorarioMedico.objects.filter(
-        profesional=profesional, 
-        dia_semana=fecha.weekday()
-    )
-    # Algoritmo de intersección de rangos temporales
-```
+**1. Cálculo de Disponibilidad Médica**
+- **Reto**: Determinar qué horarios están libres considerando los turnos del profesional y las citas ya agendadas
+- **Solución**: Algoritmo que cruza las plantillas de horario con las citas existentes para mostrar solo espacios disponibles
 
-**2. Control de Concurrencia en Agendamiento**
-```python
-# Problema: Evitar doble agendamiento en mismo slot
-# Solución: Validación de unicidad a nivel de base de datos + transaction.atomic()
-```
+**2. Evitar Citas Duplicadas**
+- **Reto**: Asegurar que dos personas no puedan agendar el mismo horario simultáneamente
+- **Solución**: Validaciones en la base de datos que garantizan la unicidad de cada cita
 
-### Fase 3: Testing y Seguridad 
+### Fase 3: Pruebas y Seguridad
 
-#### Estrategia de Testing Implementada:
-```
-Testing Piramidal:
-    ┌─────────────────┐
-    │  E2E Testing    │  ← Navegación completa de flujos
-    │   (Manual)      │
-    ├─────────────────┤
-    │ Integration     │  ← Testing de vistas con autenticación
-    │   Testing       │
-    ├─────────────────┤
-    │  Unit Testing   │  ← Modelos, formularios, validaciones
-    │   (26 tests)    │
-    └─────────────────┘
-```
+Se implementó una estrategia de testing en tres niveles:
+- **Tests Unitarios**: Verifican que cada componente funcione correctamente de forma aislada (26 tests)
+- **Tests de Integración**: Validan que los módulos trabajen bien en conjunto
+- **Pruebas Manuales**: Recorrido completo de flujos como un usuario real
 
-#### Evolución de la Suite de Testing:
-- **Inicial**: 17 tests básicos de funcionalidad
-- **Intermedio**: +6 tests de seguridad y roles
-- **Final**: +3 tests de producción adicionales (26 total)
+**Evolución**: El proyecto comenzó con 17 tests básicos y creció hasta 26 tests que cubren funcionalidad, seguridad y escenarios de producción.
 
-### Fase 4: Despliegue y Producción 
+### Fase 4: Despliegue en Producción
 
-#### Configuración de Entornos:
-```python
-# Patrón implementado: Configuración por ambiente
-# Producción: DATABASE_URL se configura automáticamente en Render
-# Desarrollo: SQLite local
-DATABASES = {
-    'default': dj_database_url.config(
-        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
-        conn_max_age=600
-    )
-}
-```
+El sistema se configuró para funcionar en dos ambientes:
+- **Desarrollo Local**: Base de datos SQLite para pruebas rápidas
+- **Producción (Render)**: Base de datos PostgreSQL para manejo robusto de información real
+
+Esta configuración dual permite desarrollar con rapidez localmente mientras se mantiene un ambiente de producción confiable.
 
 ---
 
@@ -401,9 +356,9 @@ Archivos estáticos servidos por Django
 ```
 Internet → Render Load Balancer → Web Service (Gunicorn)
                                       ↓
-                               WhiteNoise (Static Files)
+                                WhiteNoise (Static Files)
                                       ↓
-                               PostgreSQL Database
+                                PostgreSQL Database
 ```
 
 #### Configuración de Startup (startup.sh):
@@ -418,10 +373,10 @@ exec gunicorn core_project.wsgi:application # Servidor WSGI
 ### Pipeline de Despliegue
 ```
 Desarrollo Local → Git Repository → Render Web Service
-       ↓                              ↓
-   Testing Local                Variables Entorno
-       ↓                              ↓
-  Validación                   Configuración Auto
+       ↓                                   ↓
+   Testing Local                    Variables Entorno
+       ↓                                   ↓
+    Validación                      Configuración Auto
 ```
 
 ---
@@ -641,80 +596,69 @@ def registrar_paciente(request):
 
 ### Métricas del Proyecto Alcanzadas:
 
-#### Métricas Técnicas:
+#### Métricas del Proyecto:
 - **Líneas de Código**: ~3,500 líneas (Python + HTML + CSS)
 - **Modelos de Datos**: 5 modelos principales con 15 relaciones
-- **Vistas Implementadas**: 22 vistas distribuidas en 4 módulos
-- **Tests Automatizados**: 26 tests con 100% de éxito
-- **Templates HTML**: 24 plantillas responsivas
-- **Cobertura de Funcionalidad**: 100% de requerimientos implementados
-
-#### Métricas de Proceso:
-- **Tiempo de Desarrollo**: 12 semanas (2.9 meses)
-- **Iteraciones Completadas**: 4 sprints de desarrollo
-- **Commits de Git**: 50+ commits documentados
-- **Refactorizaciones Mayores**: 3 reestructuraciones significativas
+- **Vistas**: 22 vistas organizadas en 4 módulos
+- **Tests**: 26 tests automatizados con 100% de éxito
+- **Plantillas**: 24 páginas HTML responsivas
+- **Funcionalidad**: 100% de requerimientos cumplidos
 
 ### Desafíos Técnicos Superados:
 
-#### 1. **Gestión de Concurrencia en Agendamiento**
-**Problema**: Prevenir doble reserva del mismo slot horario
-**Solución**: Implementación de validación única a nivel de base de datos + transacciones atómicas
+**1. Gestión de Citas Concurrentes**
+- **Reto**: Evitar que dos personas reserven el mismo horario al mismo tiempo
+- **Solución**: Validación a nivel de base de datos con transacciones seguras
 
-#### 2. **Configuración Dual de Ambientes**
-**Problema**: Mantener configuración de desarrollo simple vs. producción robusta
-**Solución**: Patrón de configuración basada en variables de entorno
+**2. Configuración de Ambientes**
+- **Reto**: Mantener simplicidad en desarrollo pero robustez en producción
+- **Solución**: Configuración automática según el ambiente usando variables de entorno
 
-#### 3. **Testing con Middleware de Seguridad**
-**Problema**: Middleware personalizado interfería con autenticación en tests
-**Solución**: Helper function que combina client.login() y force_login()
+**3. Tests con Seguridad Activa**
+- **Reto**: Los controles de seguridad bloqueaban las pruebas automatizadas
+- **Solución**: Sistema que desactiva temporalmente ciertos controles solo durante las pruebas
 
-#### 4. **Optimización de Queries ORM**
-**Problema**: N+1 queries en listados de citas con información de pacientes
-**Solución**: Uso de select_related() y prefetch_related()
+**4. Optimización de Consultas**
+- **Reto**: El sistema consultaba la base de datos demasiadas veces al cargar listas
+- **Solución**: Técnicas de precarga que reducen consultas y mejoran velocidad
 
-### Decisiones Arquitectónicas Críticas:
+### Decisiones Arquitectónicas Clave:
 
-#### 1. **Elección de Framework: Django vs Flask vs FastAPI**
-**Decisión**: Django
-**Justificación**: 
-- Admin interface automática para gestión
-- ORM robusto para relaciones complejas
-- Sistema de autenticación incluido
-- Ecosystem maduro para aplicaciones médicas
+**1. ¿Por qué Django y no otro framework?**
+- Incluye un panel de administración listo para usar
+- Maneja automáticamente la seguridad y autenticación
+- Tiene herramientas robustas para trabajar con bases de datos
+- Comunidad amplia con soluciones a problemas comunes
 
-#### 2. **Arquitectura de Base de Datos: SQLite vs PostgreSQL**
-**Decisión**: SQLite (desarrollo) + PostgreSQL (producción)
-**Justificación**:
-- SQLite: Simplicidad para desarrollo local
-- PostgreSQL: Base de datos robusta, open-source y optimizada para aplicaciones web modernas
+**2. ¿Por qué SQLite en desarrollo y PostgreSQL en producción?**
+- SQLite es simple y no requiere configuración para probar localmente
+- PostgreSQL es más robusto y está optimizado para aplicaciones web reales
+- Django permite cambiar entre ambos sin modificar el código
 
-#### 3. **Estrategia de Frontend: SPA vs Template Traditional**
-**Decisión**: Templates tradicionales Django
-**Justificación**:
-- Menor complejidad para MVP
-- SEO optimizado por defecto
-- Integración natural con sistema de autenticación Django
+**3. ¿Por qué páginas tradicionales y no una aplicación de página única (SPA)?**
+- Menor complejidad técnica ideal para un MVP
+- Mejor posicionamiento en buscadores por defecto
+- Integración natural con el sistema de seguridad de Django
 
 ### Conocimientos Adquiridos:
 
-#### Técnicos:
-1. **Arquitectura de Aplicaciones Web**: Comprensión profunda del patrón MVT
-2. **Seguridad Web**: Implementación de CSRF protection, validación de sesiones
-3. **Testing Automatizado**: Desarrollo de suite de tests comprehensiva
-4. **Deployment en Cloud**: Configuración y despliegue en plataformas PaaS (Render)
-5. **Optimización de Performance**: Técnicas de optimización de queries ORM
+**Técnicos:**
+- Arquitectura de aplicaciones web con el patrón MVT (Modelo-Vista-Template)
+- Implementación de seguridad: protección contra ataques y validación de sesiones
+- Creación de pruebas automatizadas para garantizar calidad del código
+- Despliegue de aplicaciones en la nube (Render)
+- Optimización de consultas a bases de datos para mejorar rendimiento
 
-#### Metodológicos:
-1. **Desarrollo Iterativo**: Beneficios del desarrollo incremental
-2. **Documentación Técnica**: Importancia de documentar decisiones arquitectónicas
-3. **Control de Versiones**: Uso avanzado de Git para desarrollo profesional
-4. **Testing-Driven Development**: Valor de los tests automatizados
+**Metodológicos:**
+- Ventajas del desarrollo incremental: agregar funcionalidad paso a paso
+- Importancia de documentar las decisiones técnicas tomadas
+- Uso profesional de Git para control de versiones
+- Valor de las pruebas automatizadas para detectar errores tempranamente
 
-#### Profesionales:
-1. **Comunicación con Stakeholders**: Traducción de requerimientos de negocio a especificaciones técnicas
-2. **Gestión de Tiempo**: Planificación realista de sprints de desarrollo
-3. **Resolución de Problemas**: Metodología sistemática para debugging
+**Profesionales:**
+- Traducir necesidades del negocio a especificaciones técnicas
+- Planificación realista de tareas y tiempos de desarrollo
+- Metodología sistemática para encontrar y resolver problemas
 
 ---
 
@@ -729,17 +673,17 @@ def registrar_paciente(request):
 
 ### Impacto del Proyecto:
 
-#### Para IPS Medical Integral:
-- Digitalización de procesos manuales de agendamiento
-- Reducción estimada del 60% en tiempo de gestión de citas
-- Centralización de información de pacientes y profesionales
-- Base tecnológica para futuras expansiones digitales
+**Para IPS Medical Integral:**
+- Digitalización completa del proceso de agendamiento de citas
+- Reducción estimada del 60% en tiempo de gestión
+- Información centralizada de pacientes y profesionales
+- Infraestructura lista para futuras expansiones digitales
 
-#### Para mi Formación Profesional:
+**Para mi Formación:**
 - Experiencia práctica en desarrollo de software empresarial
-- Comprensión de arquitecturas web modernas
-- Habilidades en testing y deployment en producción
-- Experiencia en documentación técnica profesional
+- Dominio de arquitecturas web modernas
+- Habilidades en pruebas automatizadas y despliegue en producción
+- Capacidad de crear documentación técnica profesional
 
 ### Roadmap de Mejoras Futuras:
 
@@ -763,9 +707,9 @@ def registrar_paciente(request):
 
 ### Reflexión Final:
 
-Este proyecto representa la culminación exitosa de mis estudios en la Tecnologia en Análisis y Desarrollo de Software, demostrando la capacidad de aplicar conocimientos teóricos en la resolución de problemas reales del sector salud. La experiencia adquirida en desarrollo full-stack, arquitectura de software, testing automatizado y despliegue en cloud constituye una base sólida para mi carrera como Técnologo en Análisis y Desarrollo de Software.
+Este proyecto representa la culminación de mis estudios en Análisis y Desarrollo de Software, demostrando la capacidad de resolver problemas reales del sector salud mediante tecnología. La experiencia adquirida en desarrollo web, arquitectura de software, pruebas automatizadas y despliegue en producción constituye una base sólida para mi carrera profesional.
 
-El sistema desarrollado no solo cumple con los objetivos académicos establecidos, sino que proporciona valor real a una simulación de una IPS, estableciendo un precedente para futuras soluciones tecnológicas en el sector de la salud.
+El sistema no solo cumple con los objetivos académicos establecidos, sino que proporciona valor real a una institución de salud, demostrando que la tecnología puede mejorar significativamente los procesos administrativos y la atención a pacientes.
 
 ---
 
@@ -794,4 +738,4 @@ El sistema desarrollado no solo cumple con los objetivos académicos establecido
 ---
 
 *Proyecto desarrollado como requisito de grado en Análisis y Desarrollo de Software*  
-*Junio 2025*
+*Octubre 2025*
