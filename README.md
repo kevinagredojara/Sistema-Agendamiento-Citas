@@ -12,6 +12,26 @@
 
 ---
 
+## Contenido
+
+1. [Resumen Ejecutivo](#resumen-ejecutivo)
+2. [Problemática y Justificación](#problemática-y-justificación)
+3. [Metodología de Desarrollo](#metodología-de-desarrollo)
+4. [Arquitectura del Sistema](#arquitectura-del-sistema)
+5. [Modelado de Datos y Diseño](#modelado-de-datos-y-diseño)
+6. [Análisis de Requerimientos](#análisis-de-requerimientos)
+7. [Proceso de Desarrollo y Decisiones Técnicas](#proceso-de-desarrollo-y-decisiones-técnicas)
+8. [Implementación de Características Avanzadas](#implementación-de-características-avanzadas)
+9. [Arquitectura de Despliegue](#arquitectura-de-despliegue)
+10. [Testing y Aseguramiento de Calidad](#testing-y-aseguramiento-de-calidad)
+11. [Configuración y Despliegue](#configuración-y-despliegue)
+12. [Estructura del Proyecto y Organización del Código](#estructura-del-proyecto-y-organización-del-código)
+13. [Análisis de Resultados y Lecciones Aprendidas](#análisis-de-resultados-y-lecciones-aprendidas)
+14. [Conclusiones y Trabajo Futuro](#conclusiones-y-trabajo-futuro)
+15. [Recursos y Referencias](#recursos-y-referencias)
+
+---
+
 ## Resumen Ejecutivo
 
 Este documento presenta el desarrollo de un Sistema de Agendamiento de Citas Médicas implementado como Producto Mínimo Viable (MVP) para la IPS Medical Integral. El proyecto constituye mi trabajo de grado para optar por el título de Técnologo en Análisis y Desarrollo de Software, demostrando la aplicación práctica de metodologías de desarrollo de software, arquitecturas web modernas y mejores prácticas de ingeniería de software.
@@ -161,48 +181,42 @@ Sprint 1: Autenticación y Roles → Sprint 2: Gestión Pacientes → Sprint 3: 
 ### Requerimientos Funcionales Implementados
 
 #### RF-001: Sistema de Autenticación y Autorización
-```
-Actor: Todos los usuarios
-Descripción: El sistema debe permitir autenticación segura y autorización basada en roles
-Implementación: 
-  - Decoradores personalizados (@asesor_required, @profesional_required, @paciente_required)
-  - Middleware de seguridad de sesiones
-  - Validadores de contraseña personalizados
-```
+**Actor:** Todos los usuarios
+
+**Descripción:** El sistema debe permitir autenticación segura y autorización basada en roles
+
+**Implementación:**
+- Decoradores personalizados (`@asesor_required`, `@profesional_required`, `@paciente_required`)
+- Middleware de seguridad de sesiones
+- Validadores de contraseña personalizados
 
 #### RF-002: Gestión de Pacientes (Asesor)
-```
-Caso de Uso Principal:
-  1. Registrar nuevo paciente → Validar datos → Crear usuario → Asociar perfil
-  2. Buscar paciente existente → Filtros dinámicos → Modificar información
-  3. Listar pacientes → Paginación → Ordenamiento alfabético
-```
+**Caso de Uso Principal:**
+1. Registrar nuevo paciente → Validar datos → Crear usuario → Asociar perfil
+2. Buscar paciente existente → Filtros dinámicos → Modificar información
+3. Listar pacientes → Paginación → Ordenamiento alfabético
 
 #### RF-003: Agendamiento de Citas (Asesor)
+**Flujo de Agendamiento:**
 ```
-Flujo de Agendamiento:
-  Consultar Disponibilidad → Seleccionar Slot → Buscar Paciente → Confirmar Cita
-            ↓                       ↓                 ↓                 ↓
-      PlantillaHorario        DateTime Range       Documento     Email Notificación
+Consultar Disponibilidad → Seleccionar Slot → Buscar Paciente → Confirmar Cita
+          ↓                       ↓                 ↓                 ↓
+  PlantillaHorario        DateTime Range       Documento     Email Notificación
 ```
 
 #### RF-004: Gestión de Agenda (Profesional)
-```
-Funcionalidades:
-  - Vista calendario diaria con navegación por fechas
-  - Detalles completos de paciente por cita
-  - Registro de asistencia post-consulta
-  - Estados: Programada → Realizada/No_Asistio
-```
+**Funcionalidades:**
+- Vista calendario diaria con navegación por fechas
+- Detalles completos de paciente por cita
+- Registro de asistencia post-consulta
+- Estados: Programada → Realizada/No_Asistio
 
 #### RF-005: Portal del Paciente
-```
-Servicios Disponibles:
-  - Visualización de próximas citas programadas
-  - Historial de citas médicas completo
-  - Actualización de datos de contacto
-  - Cambio de contraseña seguro
-```
+**Servicios Disponibles:**
+- Visualización de próximas citas programadas
+- Historial de citas médicas completo
+- Actualización de datos de contacto
+- Cambio de contraseña seguro
 
 ### Requerimientos No Funcionales
 
@@ -247,27 +261,27 @@ El desarrollo se organizó en incrementos funcionales:
 #### Principales Desafíos Técnicos Resueltos:
 
 **1. Cálculo de Disponibilidad Médica**
-- **Reto**: Determinar qué horarios están libres considerando los turnos del profesional y las citas ya agendadas
-- **Solución**: Algoritmo que cruza las plantillas de horario con las citas existentes para mostrar solo espacios disponibles
+- Reto: Determinar qué horarios están libres considerando los turnos del profesional y las citas ya agendadas
+- Solución: Algoritmo que cruza las plantillas de horario con las citas existentes para mostrar solo espacios disponibles
 
 **2. Evitar Citas Duplicadas**
-- **Reto**: Asegurar que dos personas no puedan agendar el mismo horario simultáneamente
-- **Solución**: Validaciones en la base de datos que garantizan la unicidad de cada cita
+- Reto: Asegurar que dos personas no puedan agendar el mismo horario simultáneamente
+- Solución: Validaciones en la base de datos que garantizan la unicidad de cada cita
 
 ### Fase 3: Pruebas y Seguridad
 
 Se implementó una estrategia de testing en tres niveles:
-- **Tests Unitarios**: Verifican que cada componente funcione correctamente de forma aislada (26 tests)
-- **Tests de Integración**: Validan que los módulos trabajen bien en conjunto
-- **Pruebas Manuales**: Recorrido completo de flujos como un usuario real
+- Tests Unitarios: Verifican que cada componente funcione correctamente de forma aislada (26 tests)
+- Tests de Integración: Validan que los módulos trabajen bien en conjunto
+- Pruebas Manuales: Recorrido completo de flujos como un usuario real
 
-**Evolución**: El proyecto comenzó con 17 tests básicos y creció hasta 26 tests que cubren funcionalidad, seguridad y escenarios de producción.
+Evolución: El proyecto comenzó con 17 tests básicos y creció hasta 26 tests que cubren funcionalidad, seguridad y escenarios de producción.
 
 ### Fase 4: Despliegue en Producción
 
 El sistema se configuró para funcionar en dos ambientes:
-- **Desarrollo Local**: Base de datos SQLite para pruebas rápidas
-- **Producción (Render)**: Base de datos PostgreSQL para manejo robusto de información real
+- Desarrollo Local: Base de datos SQLite para pruebas rápidas
+- Producción (Render): Base de datos PostgreSQL para manejo robusto de información real
 
 Esta configuración dual permite desarrollar con rapidez localmente mientras se mantiene un ambiente de producción confiable.
 
@@ -288,7 +302,7 @@ class SessionSecurityMiddleware:
     """
 ```
 
-**Justificación**: Los sistemas médicos requieren controles estrictos de acceso por regulaciones de privacidad.
+Justificación: Los sistemas médicos requieren controles estrictos de acceso por regulaciones de privacidad.
 
 ### Validadores Personalizados
 ```python
@@ -584,20 +598,20 @@ def registrar_paciente(request):
 ### Desafíos Técnicos Superados:
 
 **1. Gestión de Citas Concurrentes**
-- **Reto**: Evitar que dos personas reserven el mismo horario al mismo tiempo
-- **Solución**: Validación a nivel de base de datos con transacciones seguras
+- Reto: Evitar que dos personas reserven el mismo horario al mismo tiempo
+- Solución: Validación a nivel de base de datos con transacciones seguras
 
 **2. Configuración de Ambientes**
-- **Reto**: Mantener simplicidad en desarrollo pero robustez en producción
-- **Solución**: Configuración automática según el ambiente usando variables de entorno
+- Reto: Mantener simplicidad en desarrollo pero robustez en producción
+- Solución: Configuración automática según el ambiente usando variables de entorno
 
 **3. Tests con Seguridad Activa**
-- **Reto**: Los controles de seguridad bloqueaban las pruebas automatizadas
-- **Solución**: Sistema que desactiva temporalmente ciertos controles solo durante las pruebas
+- Reto: Los controles de seguridad bloqueaban las pruebas automatizadas
+- Solución: Sistema que desactiva temporalmente ciertos controles solo durante las pruebas
 
 **4. Optimización de Consultas**
-- **Reto**: El sistema consultaba la base de datos demasiadas veces al cargar listas
-- **Solución**: Técnicas de precarga que reducen consultas y mejoran velocidad
+- Reto: El sistema consultaba la base de datos demasiadas veces al cargar listas
+- Solución: Técnicas de precarga que reducen consultas y mejoran velocidad
 
 ### Decisiones Arquitectónicas Clave:
 
