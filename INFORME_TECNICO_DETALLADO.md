@@ -87,9 +87,9 @@ DATABASES = {
 
 El sistema usa una arquitectura en 4 capas:
 
-1. **Presentación:** Templates HTML + CSS + JavaScript (24 archivos)
-2. **Aplicación:** Views (22 vistas) + Forms (7 formularios) + Decorators
-3. **Negocio:** Models (5 modelos) + Validators + Middleware
+1. **Presentación:** Templates HTML + CSS + JavaScript (25 archivos)
+2. **Aplicación:** Views (23 vistas) + Forms (8 formularios) + Decorators
+3. **Negocio:** Models (6 modelos) + Validators + Middleware
 4. **Datos:** Django ORM + Base de Datos + Migraciones
 
 ### 2.2 Organización por Roles
@@ -122,12 +122,16 @@ agendamiento/
 
 ### 3.1 Modelos Principales
 
-El sistema tiene 5 modelos principales:
+El sistema tiene 6 modelos principales:
 
 **User (Django built-in)** → Autenticación base  
 ├─ **Paciente** (1:1) → Datos del paciente (documento, teléfono, fecha nacimiento)  
 ├─ **Profesional** (1:1) → Datos del médico (registro profesional, especialidad)  
 └─ **Asesor** (1:1) → Personal administrativo
+
+**Especialidad** → Catálogo de especialidades médicas (nombre, duración consulta)  
+**PlantillaHorarioMedico** → Horarios de atención semanales de profesionales  
+**Cita** → Registro de citas médicas (paciente, profesional, fecha/hora, estado)
 
 **Especialidad** → Catálogo (nombre, duración consulta)  
 **Cita** → Relación entre Paciente + Profesional (fecha, hora, estado)  

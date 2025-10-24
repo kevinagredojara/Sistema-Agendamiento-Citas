@@ -154,32 +154,6 @@ Sprint 1: Autenticación y Roles → Sprint 2: Gestión Pacientes → Sprint 3: 
     ═══════════════════════════════════════════════════════════════════════════════════════
 ```
 
-### Decisiones de Diseño Arquitectónico
-
-#### 1. **Patrón de Herencia de Usuario**
-```python
-# Decisión: OneToOneField vs Herencia Directa
-User (Django) ←── OneToOneField ──→ Paciente/Profesional/Asesor
-```
-**Justificación**: Mantiene flexibilidad del sistema de autenticación Django sin sobrecargar el modelo User base.
-
-#### 2. **Estados de Cita con Máquina de Estados**
-```
-Programada → Realizada
-    │           ↑
-    ↓           │
-Cancelada   No_Asistio
-```
-
-#### 3. **Plantillas de Horario Flexibles**
-```python
-PlantillaHorarioMedico:
-    - dia_semana (0-6)
-    - hora_inicio_bloque
-    - hora_fin_bloque
-```
-**Ventaja**: Permite configuraciones complejas de horarios por profesional.
-
 ---
 
 ## Análisis de Requerimientos
@@ -539,18 +513,18 @@ Sistema-Agendamiento-Citas/
 │   ├── wsgi.py                      # Configuración WSGI para producción
 │   └── asgi.py                      # Configuración ASGI (preparado para async)
 ├── agendamiento/                    # Aplicación principal del negocio
-│   ├── models.py                    # 5 modelos principales con relaciones complejas
-│   ├── views_asesor.py              # 8 vistas específicas para rol asesor
+│   ├── models.py                    # 6 modelos principales con relaciones complejas
+│   ├── views_asesor.py              # 12 vistas específicas para rol asesor
 │   ├── views_profesional.py         # 4 vistas para gestión de agenda médica
-│   ├── views_paciente.py            # 3 vistas para portal del paciente
+│   ├── views_paciente.py            # 4 vistas para portal del paciente
 │   ├── views_auth.py                # Autenticación personalizada con seguridad
-│   ├── forms.py                     # 7 formularios con validación robusta
+│   ├── forms.py                     # 8 formularios con validación robusta
 │   ├── decorators.py                # 3 decoradores personalizados por rol
 │   ├── middleware.py                # 2 middlewares de seguridad personalizados
 │   ├── validators.py                # Validadores personalizados para dominio médico
 │   ├── admin.py                     # Configuración de Django Admin optimizada
 │   ├── tests.py                     # Suite completa de 26 tests
-│   ├── templates/agendamiento/      # 24 templates HTML organizados por funcionalidad
+│   ├── templates/agendamiento/      # 25 templates HTML organizados por funcionalidad
 │   ├── static/agendamiento/         # Archivos CSS, JS e imágenes optimizados
 │   ├── management/commands/         # Comandos personalizados para mantenimiento
 │   └── migrations/                  # Migraciones de base de datos versionadas
@@ -597,11 +571,14 @@ def registrar_paciente(request):
 ### Métricas del Proyecto Alcanzadas:
 
 #### Métricas del Proyecto:
-- **Líneas de Código**: ~3,500 líneas (Python + HTML + CSS)
-- **Modelos de Datos**: 5 modelos principales con 15 relaciones
-- **Vistas**: 22 vistas organizadas en 4 módulos
-- **Tests**: 26 tests automatizados con 100% de éxito
-- **Plantillas**: 24 páginas HTML responsivas
+- **Líneas de Código**: 3,500 líneas (Python + HTML + CSS)
+- **Modelos de Datos**: 6 modelos principales (Especialidad, Paciente, ProfesionalSalud, AsesorServicio, PlantillaHorarioMedico, Cita)
+- **Vistas**: 23 vistas organizadas en 5 módulos especializados por rol (views.py, views_paciente.py, views_profesional.py, views_asesor.py, views_auth.py)
+- **Tests**: 26 tests automatizados con 100% de éxito (17 funcionales + 9 producción)
+- **Plantillas**: 25 páginas HTML responsivas
+- **Formularios**: 8 formularios con validaciones personalizadas (UserForm, PacienteForm, CitaFilterForm, etc.)
+- **URLs**: 25 rutas configuradas con namespace 'agendamiento'
+- **Middlewares**: 2 middlewares personalizados de seguridad (SessionSecurityMiddleware, SessionIntegrityMiddleware)
 - **Funcionalidad**: 100% de requerimientos cumplidos
 
 ### Desafíos Técnicos Superados:
@@ -667,8 +644,11 @@ def registrar_paciente(request):
 ### Objetivos Alcanzados:
 
 ✅ **Objetivo Principal**: Desarrollo exitoso de MVP funcional para gestión de citas médicas
+
 ✅ **Objetivo Técnico**: Implementación de arquitectura escalable con Django
+
 ✅ **Objetivo Académico**: Aplicación práctica de conceptos de ingeniería de software
+
 ✅ **Objetivo Profesional**: Experiencia en desarrollo full-stack y despliegue en cloud
 
 ### Impacto del Proyecto:
@@ -705,11 +685,6 @@ def registrar_paciente(request):
 - [ ] **Multi-tenancy**: Soporte para múltiples IPS
 - [ ] **Analytics Avanzado**: Business Intelligence integrado
 
-### Reflexión Final:
-
-Este proyecto representa la culminación de mis estudios en Análisis y Desarrollo de Software, demostrando la capacidad de resolver problemas reales del sector salud mediante tecnología. La experiencia adquirida en desarrollo web, arquitectura de software, pruebas automatizadas y despliegue en producción constituye una base sólida para mi carrera profesional.
-
-El sistema no solo cumple con los objetivos académicos establecidos, sino que proporciona valor real a una institución de salud, demostrando que la tecnología puede mejorar significativamente los procesos administrativos y la atención a pacientes.
 
 ---
 
