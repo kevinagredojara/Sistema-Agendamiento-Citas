@@ -33,20 +33,33 @@ else:
 
 
 # ============================================================================
-# 2. HOSTS PERMITIDOS
+# 2. HOSTS PERMITIDOS Y SEGURIDAD CSRF
 # ============================================================================
 
 ALLOWED_HOSTS = []
+CSRF_TRUSTED_ORIGINS = []
 
 if IS_PRODUCTION:
+    # 1. Subdominio automático de Render (si existe)
     RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
     if RENDER_EXTERNAL_HOSTNAME:
         ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+        # Importante: CSRF necesita el esquema (https://)
+        CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
     
+    # 2. Dominio personalizado
     ALLOWED_HOSTS.append('medicalintegral.app')
     ALLOWED_HOSTS.append('www.medicalintegral.app')
+    
+    # Dominios de confianza para formularios seguros (Login)
+    CSRF_TRUSTED_ORIGINS.extend([
+        'https://medicalintegral.app',
+        'https://www.medicalintegral.app',
+    ])
 else:
     ALLOWED_HOSTS.extend(['localhost', '127.0.0.1'])
+    CSRF_TRUSTED_ORIGINS.extend(['http://localhost:8000', 'http://127.0.0.1:8000'])
+
 
 # ============================================================================
 # 3. APLICACIONES Y MIDDLEWARE
