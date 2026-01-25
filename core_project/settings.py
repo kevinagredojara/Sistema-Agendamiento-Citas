@@ -26,10 +26,10 @@ IS_PRODUCTION = os.getenv('RENDER') == 'true'
 
 if IS_PRODUCTION:
     DEBUG = False
-    print("🚀 CONFIGURACIONES DE PRODUCCIÓN (Render) ACTIVADAS")
+    print("[PROD] CONFIGURACIONES DE PRODUCCIÓN (Render) ACTIVADAS")
 else:
     DEBUG = True
-    print("💻 CONFIGURACIONES DE DESARROLLO LOCAL ACTIVADAS")
+    print("[DEV] CONFIGURACIONES DE DESARROLLO LOCAL ACTIVADAS")
 
 
 # ============================================================================
@@ -59,6 +59,11 @@ if IS_PRODUCTION:
 else:
     ALLOWED_HOSTS.extend(['localhost', '127.0.0.1'])
     CSRF_TRUSTED_ORIGINS.extend(['http://localhost:8000', 'http://127.0.0.1:8000'])
+    
+    # Asegurar que cookies seguras están desactivadas en local
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_SSL_REDIRECT = False
 
 
 # ============================================================================

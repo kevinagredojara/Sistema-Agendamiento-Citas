@@ -5,55 +5,62 @@
 {% block content %}
 <div class="login-container">
     <h1>Iniciar Sesión</h1>
-    
+
     {% if form.errors %}
-        <div class="message message-error">
-            Tu nombre de usuario y contraseña no coinciden. Por favor, inténtalo de nuevo.
-        </div>
+    <div class="message message-error">
+        {% if form.non_field_errors %}
+        {% for error in form.non_field_errors %}
+        {{ error }}<br>
+        {% endfor %}
+        {% else %}
+        Por favor corrige los errores abajo indicados.
+        {% endif %}
+    </div>
     {% endif %}
 
     <form method="post" action="{% url 'agendamiento:login' %}">
         {% csrf_token %}
-        
+
         <div class="form-group">
             <label for="id_username" class="form-label">Nombre de usuario</label>
             <input type="text" name="username" class="form-control" id="id_username" required>
             {% if form.username.errors %}
-                {% for error in form.username.errors %}
-                    <span class="error-message">{{ error }}</span>
-                {% endfor %}
+            {% for error in form.username.errors %}
+            <span class="error-message">{{ error }}</span>
+            {% endfor %}
             {% endif %}
         </div>
-        
+
         <div class="form-group">
             <label for="id_password" class="form-label">Contraseña</label>
             <input type="password" name="password" class="form-control" id="id_password" required>
             {% if form.password.errors %}
-                {% for error in form.password.errors %}
-                    <span class="error-message">{{ error }}</span>
-                {% endfor %}
+            {% for error in form.password.errors %}
+            <span class="error-message">{{ error }}</span>
+            {% endfor %}
             {% endif %}
-        </div>        
+        </div>
         <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
     </form>
 </div>
 
 <style>
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-left: 4px solid #28a745;
-    border-radius: 4px;
-    text-align: center;
-}
+    .security-info {
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-left: 4px solid #28a745;
+        border-radius: 4px;
+        text-align: center;
+    }
 
-.security-info small {
-    color: #6c757d;
-    font-size: 0.875rem;
-}
+    .security-info small {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
 
-.security-info i {
-    color: #28a745;
-    margin-right: 5px;
-}
+    .security-info i {
+        color: #28a745;
+        margin-right: 5px;
+    }
 </style>
 {% endblock %}

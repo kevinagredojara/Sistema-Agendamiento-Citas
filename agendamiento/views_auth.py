@@ -70,6 +70,8 @@ class CustomLoginView(auth_views.LoginView):
         else:
             return reverse_lazy('pagina_inicio')
 
+
+
 class CustomLogoutView(auth_views.LogoutView):
     """Vista de logout personalizada que limpia la sesión de manera segura."""
     next_page = reverse_lazy('pagina_inicio')
