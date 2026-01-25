@@ -251,15 +251,23 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
                 paciente_seleccionado = Paciente.objects.get(id=paciente_id_confirmado)
                 especialidad_cita_propuesta = profesional.especialidad
 
-                # Validación 1: Verificar conflicto de horario (misma fecha/hora, cualquier especialidad)
-                cita_conflicto_horario = Cita.objects.filter(
+                # REGLA DE NEGOCIO 3: Validación de Cruce de Horarios del Paciente (Cross-Specialty)
+                # Verificar que el paciente no tenga otra cita que se solape con la nueva, + 10 min de buffer traslados
+                
+                buffer_traslado = timedelta(minutes=10)
+                inicio_con_buffer = fecha_hora_inicio_cita_aware - buffer_traslado
+                fin_con_buffer = fecha_hora_fin_cita_aware + buffer_traslado
+
+                cita_conflicto_paciente = Cita.objects.filter(
                     paciente=paciente_seleccionado,
-                    fecha_hora_inicio_cita=fecha_hora_inicio_cita_aware,
-                    estado_cita='Programada'
+                    estado_cita='Programada',
+                    fecha_hora_inicio_cita__lt=fin_con_buffer,
+                    fecha_hora_fin_cita__gt=inicio_con_buffer
                 ).first()
 
-                if cita_conflicto_horario:
-                    fecha_hora_conflicto_local = timezone.localtime(cita_conflicto_horario.fecha_hora_inicio_cita)
+                if cita_conflicto_paciente:
+                     # Formateo de mensaje de error detallado
+                    fecha_hora_conflicto_local = timezone.localtime(cita_conflicto_paciente.fecha_hora_inicio_cita)
                     de_str = _('de')
                     dia_sem_str = formats.date_format(fecha_hora_conflicto_local, "l")
                     dia_num_str = formats.date_format(fecha_hora_conflicto_local, "d")
@@ -268,7 +276,7 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
                     hora_str = fecha_hora_conflicto_local.strftime('%H:%M')
                     fecha_conflicto_formato = f"{dia_sem_str}, {dia_num_str} {de_str} {mes_str} {de_str} {anho_str}, {hora_str}"
                     
-                    messages.error(request, f"El paciente {paciente_seleccionado.user_account.get_full_name()} ya tiene una cita programada el {fecha_conflicto_formato} para {cita_conflicto_horario.profesional.especialidad.nombre_especialidad} con Dr(a). {cita_conflicto_horario.profesional.user_account.get_full_name()}. No se pueden agendar dos citas a la misma hora.")
+                    messages.error(request, f"Conflicto de agenda para el paciente: {paciente_seleccionado.user_account.get_full_name()} ya tiene una cita ({cita_conflicto_paciente.profesional.especialidad.nombre_especialidad}) programada el {fecha_conflicto_formato}. Debe existir un margen de 10 minutos entre citas.")
                     return redirect('agendamiento:consultar_disponibilidad')
 
                 # Validación 2: Paciente no debe tener otra cita programada para la misma especialidad
