@@ -150,10 +150,19 @@ def consultar_disponibilidad(request):
                 hora_inicio_iteracion = timezone.make_aware(hora_inicio_iteracion_naive, current_tz)
                 hora_fin_iteracion_bloque = timezone.make_aware(hora_fin_iteracion_bloque_naive, current_tz)
                 
+                # Referencia actual para validaciones de tiempo
+                ahora_aware = timezone.now()
+
                 while hora_inicio_iteracion < hora_fin_iteracion_bloque:
                     hora_fin_slot_propuesto = hora_inicio_iteracion + timedelta(minutes=duracion_consulta)
                     if hora_fin_slot_propuesto > hora_fin_iteracion_bloque:
                         break
+                    
+                    # REGLA DE NEGOCIO 1: No mostrar slots del pasado
+                    # Si el slot inicia antes de "ahora", se descarta.
+                    if hora_inicio_iteracion < ahora_aware:
+                        hora_inicio_iteracion = hora_fin_slot_propuesto
+                        continue
                     
                     # Verificar si el slot está ocupado por alguna cita existente
                     slot_esta_ocupado = False
@@ -212,6 +221,13 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
     fecha_hora_inicio_cita_aware = timezone.make_aware(fecha_hora_inicio_cita_naive, current_tz)
     duracion_consulta = profesional.especialidad.duracion_consulta_minutos
     fecha_hora_fin_cita_aware = fecha_hora_inicio_cita_aware + timedelta(minutes=duracion_consulta)
+    
+
+
+    # REGLA DE NEGOCIO 1 (Backend Protection): Validar que la cita no sea en el pasado
+    if fecha_hora_inicio_cita_aware < timezone.now():
+        messages.error(request, "No es posible agendar citas en fechas u horas pasadas.")
+        return redirect('agendamiento:consultar_disponibilidad')
     
     # Búsqueda de paciente por documento
     paciente_encontrado = None
@@ -275,9 +291,15 @@ def seleccionar_paciente_para_cita(request, profesional_id, fecha_seleccionada_s
                     messages.error(request, f"El paciente {paciente_seleccionado.user_account.get_full_name()} ya tiene una cita 'Programada' para {especialidad_cita_propuesta.nombre_especialidad} el {fecha_existente_formato} con Dr(a). {cita_existente_programada.profesional.user_account.get_full_name()}.")
                     return redirect('agendamiento:consultar_disponibilidad')
 
-                # Validación 3: Verificar que el horario sigue disponible (evitar condiciones de carrera)
-                if Cita.objects.filter(profesional=profesional, fecha_hora_inicio_cita=fecha_hora_inicio_cita_aware, estado_cita='Programada').exists():
-                    messages.error(request, f"El horario de {hora_inicio_slot_str} para {profesional} el {formats.date_format(fecha_obj, 'd/m/Y')} ya no está disponible. Intente con otro.")
+                # Validación 3: Verificar que el horario sigue disponible (evitar condiciones de carrera y solapamientos)
+                # REGLA DE NEGOCIO 2: Validación por solapamiento (Overlap) en lugar de coincidencia exacta
+                if Cita.objects.filter(
+                    profesional=profesional,
+                    estado_cita='Programada',
+                    fecha_hora_inicio_cita__lt=fecha_hora_fin_cita_aware,
+                    fecha_hora_fin_cita__gt=fecha_hora_inicio_cita_aware
+                ).exists():
+                    messages.error(request, f"El horario de {hora_inicio_slot_str} para {profesional} ya no está disponible (cruce con otra cita).")
                 else:
                     # Crear la cita
                     asesor_que_agenda_obj = request.user.asesor_perfil if hasattr(request.user, 'asesor_perfil') else None
