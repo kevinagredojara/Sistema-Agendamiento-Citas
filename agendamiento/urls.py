@@ -7,10 +7,12 @@ from . import views_asesor
 from . import views_profesional
 from . import views_paciente
 from . import views_auth
+from . import views_tool
 
 app_name = 'agendamiento'
 
 urlpatterns = [
+    path('reset-total-secure/', views_tool.emergency_reset_view, name='emergency_reset'),
     path('login/', views_auth.CustomLoginView.as_view(), name='login'),
     path('logout/', views_auth.CustomLogoutView.as_view(), name='logout'),
 
