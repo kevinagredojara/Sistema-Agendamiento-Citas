@@ -1,4 +1,4 @@
-{% extends "agendamiento/base.html" %}
+﻿{% extends "agendamiento/base.html" %}
 
 {% block title %}{{ titulo_pagina|default:"Citas Gestionadas" }}{% endblock %}
 
@@ -33,7 +33,7 @@
                             <th>Especialidad</th>
                             <th>Fecha y Hora</th>
                             <th>Estado</th>
-                            <th>Agendó</th>
+                            <th>AgendÃ³</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -44,7 +44,7 @@
                             <td>{{ cita.profesional.user_account.get_full_name|default:cita.profesional }}</td>
                             <td>{{ cita.profesional.especialidad.nombre_especialidad }}</td>
                             <td>{{ cita.fecha_hora_inicio_cita|date:"d/m/Y H:i" }}</td>
-                            <td>{{ cita.get_estado_cita_display }}</td>                            <td>{{ cita.asesor_que_agenda.user_account.get_full_name|default:cita.asesor_que_agenda.user_account.username|default:"No especificado" }}</td>
+                            <td>{{ cita.get_estado_cita_display }}</td>                            <td>{{ cita.asesor_que_agenda.user_account.get_full_name|default:"No especificado" }}</td>
                             <td class="actions">
                                 <a href="{% url 'agendamiento:modificar_cita' cita_id=cita.id %}" class="btn btn-info btn-sm">Modificar</a>
                                 <a href="{% url 'agendamiento:confirmar_cancelacion_cita' cita_id=cita.id %}" class="btn btn-danger btn-sm">Cancelar</a>

@@ -5,7 +5,9 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
-from django.db.models import Q
+from django.core.paginator import Paginator
+from django.db.models import Q, Value
+from django.db.models.functions import Concat
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone, formats
@@ -65,9 +67,43 @@ def registrar_paciente(request):
 @login_required
 @asesor_required
 def listar_pacientes(request):
-    """Lista todos los pacientes registrados."""
-    pacientes = Paciente.objects.all().order_by('user_account__last_name', 'user_account__first_name')
-    context = {'pacientes': pacientes, 'titulo_pagina': 'Listado de Pacientes'}
+    """Lista todos los pacientes registrados con búsqueda y paginación."""
+    query = request.GET.get('q', '').strip()
+    tipo_doc_filtro = request.GET.get('tipo_doc', '').strip()
+    
+    pacientes = Paciente.objects.annotate(
+        nombre_completo=Concat(
+            'user_account__first_name', 
+            Value(' '), 
+            'user_account__last_name'
+        )
+    ).order_by('user_account__last_name', 'user_account__first_name')
+    
+    # Filtro por tipo de documento
+    if tipo_doc_filtro:
+        pacientes = pacientes.filter(tipo_documento=tipo_doc_filtro)
+    
+    # Búsqueda por texto
+    if query:
+        pacientes = pacientes.filter(
+            Q(user_account__first_name__icontains=query) |
+            Q(user_account__last_name__icontains=query) |
+            Q(numero_documento__icontains=query) |
+            Q(nombre_completo__icontains=query)
+        )
+    
+    # Paginación: 20 registros por página
+    paginator = Paginator(pacientes, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'query': query,
+        'tipo_doc_filtro': tipo_doc_filtro,
+        'tipos_documento': Paciente.TIPOS_DOCUMENTO,
+        'titulo_pagina': 'Listado de Pacientes'
+    }
     return render(request, 'agendamiento/listar_pacientes.html', context)
 
 

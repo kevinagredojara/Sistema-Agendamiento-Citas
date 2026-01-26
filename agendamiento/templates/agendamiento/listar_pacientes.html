@@ -1,48 +1,103 @@
-{% extends "agendamiento/base.html" %}
+﻿{% extends "agendamiento/base.html" %}
 
 {% block title %}{{ titulo_pagina|default:"Pacientes" }}{% endblock %}
 
 {% block navigation %}
-    <a href="{% url 'agendamiento:dashboard_asesor' %}">Dashboard</a>
-    <a href="{% url 'agendamiento:registrar_paciente' %}">Registrar Paciente</a>
-    <a href="{% url 'agendamiento:listar_pacientes' %}">Gestionar Pacientes</a>
-    <a href="{% url 'agendamiento:consultar_disponibilidad' %}">Consultar Disponibilidad</a>
-    <a href="{% url 'agendamiento:visualizar_citas_gestionadas' %}">Citas Gestionadas</a>
+<a href="{% url 'agendamiento:dashboard_asesor' %}">Dashboard</a>
+<a href="{% url 'agendamiento:registrar_paciente' %}">Registrar Paciente</a>
+<a href="{% url 'agendamiento:listar_pacientes' %}">Gestionar Pacientes</a>
+<a href="{% url 'agendamiento:consultar_disponibilidad' %}">Consultar Disponibilidad</a>
+<a href="{% url 'agendamiento:visualizar_citas_gestionadas' %}">Citas Gestionadas</a>
 {% endblock %}
 
 {% block content %}
 <div class="list-asesor-container">
     <h1>{{ titulo_pagina|default:"Listado de Pacientes" }}</h1>
-    
-    {% if pacientes %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Nombre Completo</th>
-                    <th>Tipo Documento</th>
-                    <th>Número Documento</th>
-                    <th>Teléfono</th>
-                    <th>Correo Electrónico</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for paciente_obj in pacientes %}
-                    <tr>
-                        <td>{{ paciente_obj.user_account.first_name }} {{ paciente_obj.user_account.last_name }}</td>
-                        <td>{{ paciente_obj.get_tipo_documento_display }}</td>
-                        <td>{{ paciente_obj.numero_documento }}</td>
-                        <td>{{ paciente_obj.telefono_contacto }}</td>
-                        <td>{{ paciente_obj.user_account.email }}</td>
-                        <td class="actions">
-                            <a href="{% url 'agendamiento:actualizar_paciente' paciente_id=paciente_obj.id %}" class="btn btn-warning btn-sm">Editar</a>
-                        </td>
-                    </tr>
+
+    <!-- Formulario de busqueda -->
+    <form method="get" action="{% url 'agendamiento:listar_pacientes' %}" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o documento..."
+                value="{{ query|default:'' }}">
+            <select name="tipo_doc" class="form-select" style="max-width: 200px;">
+                <option value="">Todos los tipos</option>
+                {% for codigo, nombre in tipos_documento %}
+                <option value="{{ codigo }}" {% if tipo_doc_filtro == codigo %} selected{% endif %}>
+                    {{ nombre }}
+                </option>
                 {% endfor %}
-            </tbody>
-        </table>
+            </select>
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            {% if query or tipo_doc_filtro %}
+            <a href="{% url 'agendamiento:listar_pacientes' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if page_obj %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre Completo</th>
+                <th>Tipo Documento</th>
+                <th>Numero Documento</th>
+                <th>Telefono</th>
+                <th>Correo Electronico</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for paciente_obj in page_obj %}
+            <tr>
+                <td>{{ paciente_obj.user_account.first_name }} {{ paciente_obj.user_account.last_name }}</td>
+                <td>{{ paciente_obj.get_tipo_documento_display }}</td>
+                <td>{{ paciente_obj.numero_documento }}</td>
+                <td>{{ paciente_obj.telefono_contacto }}</td>
+                <td>{{ paciente_obj.user_account.email }}</td>
+                <td class="actions">
+                    <a href="{% url 'agendamiento:actualizar_paciente' paciente_id=paciente_obj.id %}"
+                        class="btn btn-warning btn-sm">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Navegacion de paginas" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if tipo_doc_filtro %}&tipo_doc={{ tipo_doc_filtro }}{% endif %}">
+                    Anterior
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if tipo_doc_filtro %}&tipo_doc={{ tipo_doc_filtro }}{% endif %}">
+                    Siguiente
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
     {% else %}
-        <p class="no-results">No hay pacientes registrados en el sistema.</p>
+    <p class="no-results">
+        {% if query or tipo_doc_filtro %}
+        No se encontraron pacientes con los criterios especificados.
+        {% else %}
+        No hay pacientes registrados en el sistema.
+        {% endif %}
+    </p>
     {% endif %}
 
     <div class="back-link-container">
